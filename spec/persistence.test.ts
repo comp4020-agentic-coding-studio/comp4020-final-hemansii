@@ -1,20 +1,27 @@
-import { it } from "vitest";
+import { expect, inject, it } from "vitest";
+import { NOTHING_LEFT, TestVisitor, buriedCells, stateOf } from "./visitor";
 
-// crit 8's spec: "it's alive: a stranger can visit, do the core thing, and
-// find their trace still there when they come back." invariants.test.ts
-// already checks the app answers at all; this is the one line that's new
-// this week, and it needs the core interaction decided before it can assert
-// anything concrete.
-//
-// TODO once the core flow exists, replace this with something like:
-//   - POST (or otherwise perform) the core action against a running instance
-//   - fetch the page a stranger would land on afterwards
-//   - assert the trace left by that action is in the response
-//
-// Leaving this red (not skipped) is deliberate: `pnpm check` should keep
-// failing here until the real assertion replaces it.
-it("a stranger's action leaves a trace that's still there on a later visit", async () => {
-  throw new Error(
-    "no core interaction decided yet — replace this test once the app has one (see the TODO above)",
-  );
+// crit 8: "a stranger can visit, do the core thing, and find their trace
+// still there when they come back." The core thing is digging a section.
+const baseUrl = inject("baseUrl");
+
+it("a dig stays uncovered for the digger coming back and for a stranger", async () => {
+  const digger = new TestVisitor(baseUrl);
+  const first = await digger.page();
+  const name = first.doc.querySelector(".status strong")?.textContent;
+  const [cell] = buriedCells(first.doc);
+  expect(cell, NOTHING_LEFT).toBeDefined();
+
+  expect(await digger.dig(cell)).toBe("ok");
+
+  const back = await digger.page();
+  expect(stateOf(back.doc, cell)).toBe("revealed");
+
+  const stranger = await new TestVisitor(baseUrl).page();
+  expect(stateOf(stranger.doc, cell)).toBe("revealed");
+  expect(stranger.doc.querySelector(`[data-cell="${cell}"]`)?.textContent?.trim()).not.toBe("");
+
+  const note = await new TestVisitor(baseUrl).page(`/section/${cell}`);
+  expect(note.status).toBe(200);
+  expect(note.doc.querySelector("[data-finder]")?.textContent).toContain(name);
 });
