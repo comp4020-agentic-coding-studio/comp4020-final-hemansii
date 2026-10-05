@@ -1,18 +1,70 @@
 ---
-// Placeholder: proves the deploy path end to end (serves HTTP on $PORT),
-// same job the template's static placeholder did. Replace with this week's
-// app.
+import Layout from "../layouts/Layout.astro";
+import { COLS, ROWS, cellAt } from "../sites";
+import { DIGS_PER_DAY, digsToday, openSite, revealed } from "../lib/dig";
+import { getOrCreateVisitor } from "../lib/visitor";
+
+const visitor = getOrCreateVisitor(Astro.cookies);
+const { id: siteId, site } = openSite();
+const found = revealed(siteId);
+const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
+
+const MESSAGES: Record<string, string> = {
+  ok: "You uncovered a section of the site.",
+  "out-of-digs": `You've used all ${DIGS_PER_DAY} of today's digs. Come back tomorrow.`,
+  "already-dug": "Someone got to that section first.",
+  "out-of-range": "That isn't part of the dig site.",
+};
+const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>comp4020-final</title>
-  </head>
-  <body>
-    <h1>comp4020-final</h1>
-    <p>Placeholder page, kept Astro side up. See <a href="/readme/">/readme/</a> for this week's README.</p>
-  </body>
-</html>
+<Layout title="The Dig">
+  <h1>Something is buried here</h1>
+  <p>
+    An old website lies under this soil. Each visitor gets {DIGS_PER_DAY} digs a day; uncover a
+    section, then click it to read the field note.
+  </p>
+
+  <div class="status" aria-live="polite">
+    <span>You are <strong>{visitor.name}</strong></span>
+    <span data-digs-left={left}><strong>{left}</strong> of {DIGS_PER_DAY} digs left today</span>
+    <span data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</span>
+  </div>
+  {flash && <p class="flash" role="status">{flash}</p>}
+
+  <form method="post" action="/api/dig">
+    <fieldset class="grid">
+      <legend class="visually-hidden">Dig site</legend>
+      {
+        Array.from({ length: ROWS }, (_, row) =>
+          Array.from({ length: COLS }, (_, col) => {
+            const key = `${row}-${col}`;
+            const finding = found.get(key);
+            const cell = cellAt(site, row, col);
+            return finding && cell ? (
+              <a
+                class={`cell kind-${cell.kind}`}
+                href={`/section/${key}`}
+                id={`cell-${key}`}
+                data-cell={key}
+                data-state="revealed"
+                set:html={cell.html}
+              />
+            ) : (
+              <button
+                class="cell"
+                name="cell"
+                value={key}
+                id={`cell-${key}`}
+                data-cell={key}
+                data-state="buried"
+                disabled={left === 0}
+                aria-label={`Dig row ${row + 1}, column ${col + 1}`}
+              />
+            );
+          }),
+        )
+      }
+    </fieldset>
+  </form>
+</Layout>

@@ -1,0 +1,32 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { cellAt } from "../../sites";
+import { openSite, revealed } from "../../lib/dig";
+
+const key = Astro.params.id ?? "";
+const [row, col] = key.split("-").map(Number);
+const { id: siteId, site } = openSite();
+const finding = revealed(siteId).get(key);
+const cell = cellAt(site, row, col);
+
+// A buried section's content is never sent, so its note stays buried too.
+if (!finding || !cell) return new Response("Not found", { status: 404 });
+
+const when = new Date(finding.dugAt).toLocaleString("en-AU", {
+  timeZone: "Australia/Sydney",
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+---
+
+<Layout title={`Section ${row + 1}·${col + 1} — The Dig`}>
+  <p><a href={`/#cell-${key}`}>← Back to the dig</a></p>
+  <article class="note-card">
+    <h1>Row {row + 1}, column {col + 1}</h1>
+    <div class="fragment" set:html={cell.html} />
+    <h2>Field note</h2>
+    <p>{cell.note}</p>
+    <p data-finder>Uncovered by <strong>{finding.finder}</strong> on {when}.</p>
+    <p>Part of <em>{site.title}</em>.</p>
+  </article>
+</Layout>

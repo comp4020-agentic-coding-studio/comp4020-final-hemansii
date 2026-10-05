@@ -1,0 +1,177 @@
+:root {
+  --earth: #3b2a1e;
+  --soil: #6b4a33;
+  --soil-hi: #85603f;
+  --sand: #e9dcc4;
+  --ink: #241a12;
+  --accent: #c9762c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--earth);
+  color: var(--sand);
+}
+
+.wordmark {
+  font-weight: bold;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.flash {
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--accent);
+  background: #f6eee0;
+}
+
+/* The excavation: a 6x10 grid, one cell per section of the buried site. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  padding: 2px;
+  margin: 0;
+  border: 0;
+  background: var(--earth);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  padding: 0.25rem;
+  font-size: clamp(0.55rem, 1.7vw, 0.85rem);
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+button.cell {
+  border: 0;
+  background: radial-gradient(circle at 30% 30%, var(--soil-hi), var(--soil));
+  color: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+button.cell:hover:not(:disabled) {
+  background: var(--soil-hi);
+}
+
+button.cell:disabled {
+  cursor: not-allowed;
+}
+
+/* Recovered sections keep the buried site's own era styling. */
+a.cell {
+  text-decoration: none;
+  font-family: "Comic Sans MS", "Comic Sans", "Trebuchet MS", sans-serif;
+  background: #000033;
+  color: #ffff66;
+}
+
+a.cell:hover {
+  filter: brightness(1.2);
+}
+
+.kind-banner {
+  background: linear-gradient(#ff66cc, #9933ff) !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+.kind-nav {
+  background: #0000cc !important;
+  color: #66ffff !important;
+  text-decoration: underline !important;
+}
+
+.kind-side {
+  background: #003300 !important;
+  color: #99ff99 !important;
+}
+
+.kind-guest {
+  background: #fff8dc !important;
+  color: #333 !important;
+}
+
+.kind-footer {
+  background: #222 !important;
+  color: #ccc !important;
+}
+
+.counter {
+  font-family: monospace;
+  background: #000;
+  color: #0f0;
+  padding: 0 0.2em;
+}
+
+.note-card {
+  padding: 1rem;
+  background: #fffaf0;
+  border: 1px solid var(--soil);
+}
+
+.note-card .fragment {
+  padding: 0.75rem;
+  font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+  background: #000033;
+  color: #ffff66;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

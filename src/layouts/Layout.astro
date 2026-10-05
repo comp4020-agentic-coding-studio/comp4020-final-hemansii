@@ -1,0 +1,29 @@
+---
+import "../styles.css";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/" class="wordmark">The Dig</a>
+      <nav aria-label="Main">
+        <a href="/">Excavation</a>
+        <a href="/readme/">About</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
