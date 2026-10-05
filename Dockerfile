@@ -34,8 +34,8 @@ FROM base
 
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
-# once a schema exists and migrations are committed under ./drizzle, copy them
-# in here too and apply them at boot (see src/lib/db.ts)
+# the committed migrations, applied at boot (see src/lib/db.ts)
+COPY --from=build /app/drizzle /app/drizzle
 
 ENV HOST=0.0.0.0
 EXPOSE 8080
