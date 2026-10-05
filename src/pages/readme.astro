@@ -1,0 +1,20 @@
+---
+// Publishes README.md verbatim, rendered. spec/invariants.test.ts checks its
+// headings show up here, in order.
+import * as readme from "../../README.md";
+
+const title = readme.getHeadings().find((h) => h.depth === 1)?.text ?? "README";
+const html = await readme.compiledContent();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div set:html={html} />
+  </body>
+</html>
