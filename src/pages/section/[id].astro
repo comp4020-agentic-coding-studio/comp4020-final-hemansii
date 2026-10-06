@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { cellAt } from "../../sites";
+import Stamp from "../../components/Stamp.astro";
+import { cellAt, gridRef } from "../../sites";
 import { findings, openSite } from "../../lib/dig";
 
 const key = Astro.params.id ?? "";
@@ -27,7 +28,8 @@ const brushedWhen = new Date(finding.brushedAt).toLocaleString("en-AU", {
 
 <Layout title={`Section ${row + 1}·${col + 1}, The Dig`}>
   <p><a href={`/#cell-${key}`}>← Back to the dig</a></p>
-  <article class="note-card">
+  <article class="note-card deckle-edge">
+    <Stamp>Specimen {gridRef(row, col)}</Stamp>
     <h1>Row {row + 1}, column {col + 1}</h1>
     <div class="fragment" set:html={cell.html} />
     <h2>Field note</h2>

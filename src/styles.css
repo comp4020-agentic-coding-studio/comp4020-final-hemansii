@@ -1,6 +1,6 @@
 :root {
-  /* A ligne claire palette: flat, confident, limited. No gradients, no soft
-     shadows, everything the exact same bold black outline weight. */
+  /* A calm, editorial palette: warm sand/cream/terracotta/olive/blue,
+     illustrated linework, not a comic-panel poster. */
   --paper: #f2e8ce;
   --paper-hi: #faf3e2;
   --ink: #15120d;
@@ -22,6 +22,14 @@
   --accent-dark: var(--gold-dark);
   --warn: var(--terracotta);
 
+  /* Scene-setting tones, for the landscape backdrop and props. */
+  --foliage: #6a9a52;
+  --foliage-dark: #4f8a3d;
+  --haze: #cfe3ea;
+  --sand: #b4863f;
+  --olive: #8a7a3f;
+  --olive-dark: #6c6030;
+
   --line: 3px;
   --line-thin: 2px;
   --radius: 10px;
@@ -29,8 +37,12 @@
   --shadow-sm: 2px 2px 0 var(--ink);
   --shadow-lg: 6px 6px 0 var(--ink);
 
-  --font-display: "Archivo Black", "Futura", "Century Gothic", "Arial Black", sans-serif;
-  --font-body: "Poppins", -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+  /* Three roles: a characterful display serif for headings/labels, a
+     readable serif for body copy, and a clean sans kept only for compact
+     UI chrome (buttons, nav, small tags) so controls stay legible. */
+  --font-display: "Fraunces", Georgia, "Iowan Old Style", serif;
+  --font-body: "Source Serif 4", Georgia, "Iowan Old Style", serif;
+  --font-ui: "Inter", -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
 * {
@@ -48,7 +60,7 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 400;
-  line-height: 1.55;
+  line-height: 1.6;
   position: relative;
 }
 
@@ -62,7 +74,19 @@ a {
   border-radius: 2px;
 }
 
-/* ---------- Header: a masthead, like a comic cover title plate ---------- */
+/* A torn/aged paper edge, echoing the ragged cream border on an old comic
+   back cover. Top and bottom only, a flat zigzag, no blur or photoreal
+   deckling. */
+.deckle-edge {
+  clip-path: polygon(
+    0% 6px, 12.5% 0px, 25% 6px, 37.5% 1px, 50% 6px, 62.5% 0px, 75% 6px, 87.5% 1px, 100% 6px,
+    100% calc(100% - 6px), 87.5% calc(100% - 0px), 75% calc(100% - 6px), 62.5% calc(100% - 1px),
+    50% calc(100% - 6px), 37.5% calc(100% - 0px), 25% calc(100% - 6px), 12.5% calc(100% - 1px),
+    0% calc(100% - 6px)
+  );
+}
+
+/* ---------- Header: a masthead, like a magazine nameplate ---------- */
 
 .site-header {
   position: sticky;
@@ -73,18 +97,20 @@ a {
   gap: 0.5rem 1.5rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.7rem 1.25rem;
+  padding: 0.8rem 1.5rem;
   background: var(--blue);
   color: var(--paper-hi);
   border-bottom: var(--line) solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
 }
 
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-weight: 700;
+  font-size: 1.35rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-decoration: none;
@@ -92,17 +118,19 @@ a {
 }
 
 .wordmark .mascot {
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.3rem;
+  height: 2.3rem;
   flex: none;
+  filter: drop-shadow(2px 2px 0 var(--blue-dark));
 }
 
 .site-header nav {
   display: flex;
   gap: 1.5rem;
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -119,7 +147,7 @@ a {
   left: 0;
   right: 100%;
   bottom: 0;
-  height: 3px;
+  height: 2px;
   background: var(--gold);
   transition: right 160ms ease;
 }
@@ -129,28 +157,60 @@ a {
   right: 0;
 }
 
-/* ---------- Layout ---------- */
+/* ---------- Layout: the board is the page, not a narrow centered column ---------- */
 
 main {
   position: relative;
   z-index: 1;
-  max-width: 50rem;
+  max-width: min(96vw, 100rem);
   margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
+  padding: clamp(1rem, 2vw, 1.75rem) clamp(1rem, 3vw, 2.5rem) 4rem;
+}
+
+/* ---------- Dossier hero: the title plate ---------- */
+
+.dossier {
+  position: relative;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  background: var(--paper-hi);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow-lg);
 }
 
 h1 {
   font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  font-size: clamp(1.4rem, 3.6vw, 2.1rem);
-  margin: 0 0 0.6rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0;
+  font-size: clamp(1.8rem, 3.6vw, 2.75rem);
+  margin: 0 0 0.5rem;
   color: var(--ink);
 }
 
+.dossier > p,
 main > p {
+  font-family: var(--font-body);
   color: var(--ink-soft);
-  max-width: 42rem;
+  max-width: 48rem;
+}
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+  background: transparent;
+  border: 2px solid var(--terracotta-dark);
+  border-radius: 3px;
+  transform: rotate(-2deg);
 }
 
 /* ---------- Status strip: caption boxes along the top of the page ---------- */
@@ -159,7 +219,7 @@ main > p {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin: 1.1rem 0 1.4rem;
+  margin: 0.9rem 0 1.1rem;
   padding: 0;
   list-style: none;
 }
@@ -173,8 +233,14 @@ main > p {
   border: var(--line-thin) solid var(--ink);
   border-radius: 7px;
   box-shadow: var(--shadow-sm);
+  font-family: var(--font-ui);
   font-size: 0.8rem;
   color: var(--ink-soft);
+  transform: rotate(-1deg);
+}
+
+.status li:nth-child(even) {
+  transform: rotate(0.8deg);
 }
 
 .status li a {
@@ -189,7 +255,8 @@ main > p {
 }
 
 .status strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
+  font-weight: 700;
   font-size: 0.95rem;
   color: var(--ink);
 }
@@ -209,6 +276,7 @@ main > p {
 }
 
 .rename-banner label {
+  font-family: var(--font-body);
   font-size: 0.95rem;
   color: var(--ink);
 }
@@ -223,6 +291,7 @@ main > p {
   flex: 1 1 14rem;
   padding: 0.5rem 0.7rem;
   font: inherit;
+  font-family: var(--font-ui);
   border: var(--line-thin) solid var(--ink);
   border-radius: 6px;
   background: var(--paper-hi);
@@ -233,13 +302,14 @@ main > p {
    hard offset shadow disappearing as if the button moved down to meet it. */
 .rename-row button,
 .feed-form button,
-.specimen-card button {
+.specimen-card button,
+.tab-label {
   padding: 0.5rem 1rem;
   font: inherit;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
+  font-weight: 600;
   font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--paper-hi);
   background: var(--terracotta);
   border: var(--line-thin) solid var(--ink);
@@ -275,6 +345,7 @@ main > p {
   border-left: 8px solid var(--terracotta);
   border-radius: 0 8px 8px 0;
   box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
   animation: flash-in 220ms ease-out;
 }
 
@@ -295,17 +366,18 @@ main > p {
   }
 }
 
-/* ---------- Excavation layout: dig grid + field pane side by side ---------- */
+/* ---------- Excavation layout: a wide dig pane dominates, a narrow,
+   tabbed side column holds tray/notes/theories ---------- */
 
 .excavation-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
   gap: 1.5rem;
   align-items: start;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
-@media (max-width: 54rem) {
+@media (max-width: 64rem) {
   .excavation-layout {
     grid-template-columns: 1fr;
   }
@@ -314,11 +386,62 @@ main > p {
 .field-pane {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+@media (max-width: 64rem) {
+  .field-pane {
+    position: static;
+  }
+}
+
+/* A CSS-only tab bar (radio + label, no script) switching between the
+   tray / notes / theories panels, so the side column stays short instead
+   of three stacked panels forcing extra scrolling. */
+.tab-bar {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.tab-label {
+  flex: 1;
+  text-align: center;
+  color: var(--ink-soft);
+  background: var(--paper-hi);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+#tab-tray:checked ~ .tab-bar label[for="tab-tray"],
+#tab-notes:checked ~ .tab-bar label[for="tab-notes"],
+#tab-theories:checked ~ .tab-bar label[for="tab-theories"] {
+  background: var(--ink);
+  color: var(--paper-hi);
+  border-color: var(--ink);
+}
+
+.field-pane:has(#tab-tray:focus-visible) label[for="tab-tray"],
+.field-pane:has(#tab-notes:focus-visible) label[for="tab-notes"],
+.field-pane:has(#tab-theories:focus-visible) label[for="tab-theories"] {
+  outline: 3px solid var(--terracotta);
+  outline-offset: 2px;
+}
+
+.tab-panel {
+  display: none;
+}
+
+#tab-tray:checked ~ #tray,
+#tab-notes:checked ~ #notes,
+#tab-theories:checked ~ #theories {
+  display: block;
+  animation: flash-in 180ms ease-out;
 }
 
 .panel {
-  padding: 1rem;
+  padding: 1rem 1.1rem;
   background: var(--paper-hi);
   border: var(--line) solid var(--ink);
   border-radius: var(--radius);
@@ -331,9 +454,10 @@ main > p {
   gap: 0.5rem;
   margin: 0 0 0.6rem;
   font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0;
+  font-size: 1.05rem;
   color: var(--ink);
 }
 
@@ -344,10 +468,131 @@ main > p {
   color: var(--terracotta);
 }
 
+/* ---------- Scene: the landscape the dig site sits inside ---------- */
+
+.scene {
+  position: relative;
+  padding: 3.4rem 1.25rem 2.25rem;
+  background: var(--sand);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* A horizon strip across the top of the scene, kept at its own aspect
+   ratio (not stretched to fill a ten-row grid) so hills and props read
+   correctly instead of smearing down the whole height. */
+.scene-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* A rope-and-stake boundary line along the bottom edge of the scene, as
+   if the whole site had been taped off. Only this thin strip stretches
+   to fill the width (a repeating ribbon pattern, not a whole landscape),
+   so it never looks smeared the way the backdrop would. */
+.scene-boundary {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  height: 1.9rem;
+  pointer-events: none;
+}
+
+.props-cluster {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.prop {
+  position: absolute;
+  width: 2.3rem;
+  height: 2.3rem;
+  filter: drop-shadow(2px 2px 0 rgba(21, 18, 13, 0.25));
+}
+
+.prop-trowel {
+  top: 0.1rem;
+  left: 0.3rem;
+  transform: rotate(-8deg);
+}
+
+.prop-compass {
+  top: 0.15rem;
+  right: 2.3rem;
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.prop-flag {
+  top: 0.2rem;
+  right: 0.3rem;
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.prop-crate,
+.prop-shovel,
+.prop-hand-brush,
+.prop-clipboard {
+  display: none;
+}
+
+@media (min-width: 40rem) {
+  .prop-crate {
+    display: block;
+    bottom: 2.3rem;
+    left: 0.5rem;
+    width: 2.9rem;
+    height: 2.9rem;
+    transform: rotate(4deg);
+  }
+
+  .prop-shovel {
+    display: block;
+    bottom: 2.2rem;
+    right: 1.4rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    transform: rotate(10deg);
+  }
+
+  .prop-hand-brush {
+    display: block;
+    bottom: 2.1rem;
+    right: 3.6rem;
+    width: 2rem;
+    height: 2rem;
+    transform: rotate(-6deg);
+  }
+
+  .prop-clipboard {
+    display: block;
+    bottom: 2.2rem;
+    left: 3.4rem;
+    width: 2.4rem;
+    height: 2.4rem;
+    transform: rotate(-5deg);
+  }
+}
+
 /* ---------- Grid frame: a surveyor's ruler around the excavation squares,
    lettered sectors and numbered units, like a site plan ---------- */
 
 .grid-frame {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: 1.6rem 1fr;
   grid-template-rows: 1.4rem 1fr;
@@ -374,7 +619,8 @@ main > p {
 .grid-rows {
   display: grid;
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-weight: 600;
+  font-size: 0.75rem;
   color: var(--ink-soft);
 }
 
@@ -402,19 +648,42 @@ main > p {
   grid-row: 2;
 }
 
-/* ---------- The excavation grid: comic panels, not a photoreal soil pit ---------- */
+/* ---------- The excavation grid: one continuous patch of ground, seamed
+   with hairlines rather than thick black comic-panel gutters ---------- */
 
 .grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 3px;
-  padding: 3px;
+  gap: 1px;
+  padding: 5px;
   margin: 0;
-  background: var(--ink);
+  background: var(--khaki-dark);
   border: var(--line) solid var(--ink);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   animation: grid-settle 420ms ease-out;
+}
+
+/* The grass line marks the one real surface, right where the excavation
+   begins, not a band repeated on every tile (which read as sedimentary
+   stripes rather than one continuous dig). */
+.grid::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  height: 7px;
+  background: repeating-linear-gradient(
+    100deg,
+    var(--foliage) 0 14%,
+    var(--foliage-dark) 14% 20%,
+    var(--foliage) 20% 34%
+  );
+  border-radius: 3px 3px 0 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 @keyframes grid-settle {
@@ -432,7 +701,7 @@ main > p {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.75rem;
+  min-height: 4.75rem;
   padding: 0.3rem;
   font-size: clamp(0.55rem, 1.7vw, 0.85rem);
   line-height: 1.25;
@@ -441,37 +710,79 @@ main > p {
   position: relative;
 }
 
-/* Buried soil: a flat khaki field with a few hand-drawn-looking hatch
-   lines, line-based texture rather than photographic shading. */
+/* Undisturbed ground: a thin flat grass band over a khaki soil field
+   with hand-drawn-looking hatch lines, pebbles and the odd crack, so it
+   reads as real ground rather than a flat texture swatch. A little
+   per-tile filter variation keeps sixty tiles from reading as one
+   repeated stamp. */
 button.cell {
   border: 0;
   background:
+    radial-gradient(circle at 78% 70%, var(--khaki-dark) 0 3px, transparent 3px 3.5px),
+    radial-gradient(circle at 30% 80%, var(--khaki-dark) 0 2.5px, transparent 2.5px 3px),
+    radial-gradient(circle at 55% 55%, var(--khaki-dark) 0 2px, transparent 2px 2.5px),
     repeating-linear-gradient(
       128deg,
       transparent 0 11px,
-      rgba(21, 18, 13, 0.16) 11px 12.5px,
+      rgba(21, 18, 13, 0.14) 11px 12.5px,
       transparent 12.5px 24px
     ),
     var(--khaki);
   color: transparent;
   font: inherit;
   position: relative;
-  transition: transform 120ms ease, filter 120ms ease;
+  transition: transform 160ms ease, filter 160ms ease;
   cursor:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><g transform='rotate(45 14 14)'><rect x='12.5' y='4' width='3' height='12' rx='1' fill='%23e3ac3d' stroke='%2315120d' stroke-width='1.5'/><path d='M8 15 L20 15 L16 24 L12 24 Z' fill='%23cfd3d6' stroke='%2315120d' stroke-width='1.5' stroke-linejoin='round'/></g></svg>")
       6 22,
     pointer;
 }
 
+button.cell:nth-child(5n + 1) {
+  filter: brightness(1.05) saturate(0.95);
+}
+
+button.cell:nth-child(5n + 3) {
+  filter: brightness(0.95) saturate(1.05) hue-rotate(-3deg);
+}
+
+button.cell:nth-child(7n + 4) {
+  filter: brightness(1.02) hue-rotate(4deg);
+}
+
+button.cell:nth-child(7n + 2)::after {
+  content: "";
+  position: absolute;
+  bottom: 24%;
+  left: 28%;
+  width: 50%;
+  height: 1.5px;
+  background: rgba(21, 18, 13, 0.22);
+  transform: rotate(9deg);
+  pointer-events: none;
+}
+
+button.cell:nth-child(11n + 6)::after {
+  content: "";
+  position: absolute;
+  bottom: 38%;
+  left: 18%;
+  width: 36%;
+  height: 1.5px;
+  background: rgba(21, 18, 13, 0.18);
+  transform: rotate(-11deg);
+  pointer-events: none;
+}
+
 button.cell:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: scale(1.02);
+  filter: brightness(1.12);
+  transform: scale(1.015);
   z-index: 1;
 }
 
 button.cell:active:not(:disabled) {
   transform: scale(0.97);
-  filter: brightness(0.92);
+  filter: brightness(0.93);
 }
 
 button.cell:disabled {
@@ -482,10 +793,21 @@ button.cell:disabled {
     var(--khaki-dark);
 }
 
-/* Dusty: something's been dug up, but not yet brushed clean, drawn as a
-   simple flat dirt-mound glyph so it reads as "look here" at a glance. */
+/* Disturbed earth: something's been dug up, but not yet brushed clean.
+   A rougher, darker patch than the surrounding ground, with a dirt
+   mound glyph sitting on top, a clear middle step between "undisturbed"
+   and "specimen". */
 button.cell.dusty {
-  background: var(--gold);
+  background:
+    repeating-linear-gradient(
+      115deg,
+      transparent 0 6px,
+      rgba(21, 18, 13, 0.16) 6px 8px,
+      transparent 8px 15px
+    ),
+    radial-gradient(circle at 25% 75%, var(--khaki-dark) 0 2.5px, transparent 2.5px 3px),
+    radial-gradient(circle at 68% 28%, var(--khaki-dark) 0 2px, transparent 2px 2.5px),
+    var(--gold-dark);
   color: transparent;
   animation: dust-settle 320ms ease-out;
   cursor:
@@ -497,11 +819,14 @@ button.cell.dusty {
 button.cell.dusty::after {
   content: "";
   position: absolute;
-  width: 1.5rem;
-  height: 0.9rem;
+  width: 1.6rem;
+  height: 1rem;
   background: var(--khaki);
   border: var(--line-thin) solid var(--ink);
   border-radius: 50% 50% 35% 35%;
+  box-shadow:
+    -0.55rem 0.2rem 0 -0.35rem var(--khaki-dark),
+    0.6rem 0.25rem 0 -0.4rem var(--khaki-dark);
 }
 
 @keyframes dust-settle {
@@ -517,9 +842,10 @@ button.cell.dusty::after {
 
 /* A freshly-dug cell is this page's URL fragment right after the redirect
    (#cell-R-C), so :target picks out exactly the one that just changed, with
-   no client-side JS: a flat comic "burst" pops behind it as it lands. */
+   no client-side JS: a burst pops behind it, debris kicks up and the tile
+   squashes then settles as it lands. */
 button.cell.dusty:target {
-  animation: dust-settle 320ms ease-out, dig-impact 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: dust-settle 320ms ease-out, dig-impact 560ms cubic-bezier(0.3, 1.3, 0.5, 1);
   z-index: 1;
 }
 
@@ -529,22 +855,44 @@ button.cell.dusty:target::before {
   inset: -14px;
   background: repeating-conic-gradient(var(--terracotta) 0deg 9deg, transparent 9deg 18deg);
   border-radius: 50%;
-  animation: burst-pop 480ms ease-out forwards;
+  animation: burst-pop 520ms ease-out forwards;
   pointer-events: none;
+}
+
+button.cell.dusty:target::after {
+  animation: dust-settle 320ms ease-out, debris-kick 600ms ease-out forwards;
 }
 
 @keyframes dig-impact {
   0% {
-    transform: scale(0.7) rotate(-4deg);
+    transform: scale(0.72, 1.22) rotate(-2deg);
   }
-  45% {
-    transform: scale(1.15) rotate(3deg);
+  40% {
+    transform: scale(1.1, 0.9) rotate(1.5deg);
   }
-  70% {
-    transform: scale(0.95) rotate(-1deg);
+  65% {
+    transform: scale(0.96, 1.04) rotate(-0.5deg);
   }
   100% {
     transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes debris-kick {
+  0% {
+    box-shadow:
+      -0.55rem 0.2rem 0 -0.35rem var(--khaki-dark),
+      0.6rem 0.25rem 0 -0.4rem var(--khaki-dark);
+  }
+  40% {
+    box-shadow:
+      -1rem -0.4rem 0 -0.3rem var(--khaki-dark),
+      1.1rem -0.35rem 0 -0.35rem var(--khaki-dark);
+  }
+  100% {
+    box-shadow:
+      -0.55rem 0.2rem 0 -0.35rem var(--khaki-dark),
+      0.6rem 0.25rem 0 -0.4rem var(--khaki-dark);
   }
 }
 
@@ -601,15 +949,17 @@ button.cell.dusty:target::before {
   transform: scale(1.12);
 }
 
-/* Recovered sections keep the buried site's own era styling (that clash is
-   the joke), framed like a panel lifted straight off the comic page. */
+/* Recovered sections keep the buried site's own era styling (that clash
+   is the joke), still ringed with the dirt it was lifted from, like a
+   specimen that has not quite been fully cleaned yet. */
 a.cell {
   text-decoration: none;
   font-family: "Comic Sans MS", "Comic Sans", "Trebuchet MS", sans-serif;
   background: #000033;
   color: #ffff66;
   position: relative;
-  border: var(--line-thin) solid var(--ink);
+  border: var(--line-thin) solid var(--khaki-dark);
+  box-shadow: 0 0 0 2px var(--ink);
   transition: transform 140ms ease;
 }
 
@@ -628,14 +978,15 @@ a.cell::after {
 a.cell:hover,
 a.cell:focus-visible {
   transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 0 0 2px var(--ink), var(--shadow-sm);
   z-index: 1;
 }
 
-/* A freshly-brushed cell is this page's URL fragment on load: bold comic
-   motion-lines sweep across it as the dust comes off, pure CSS via :target. */
+/* A freshly-brushed cell is this page's URL fragment on load: dust flecks
+   fly off and a light sweep crosses it as the dirt comes away, pure CSS
+   via :target. */
 a.cell:target {
-  animation: brush-pop 600ms ease-out;
+  animation: brush-pop 620ms ease-out;
   z-index: 1;
 }
 
@@ -643,24 +994,29 @@ a.cell:target::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    100deg,
-    transparent 0 18%,
-    rgba(255, 255, 255, 0.85) 18% 24%,
-    transparent 24% 42%
-  );
-  animation: brush-sweep 600ms ease-out forwards;
+  background:
+    radial-gradient(circle 3px at 20% 30%, var(--khaki) 98%, transparent 100%),
+    radial-gradient(circle 2.5px at 70% 20%, var(--khaki-dark) 98%, transparent 100%),
+    radial-gradient(circle 3px at 85% 65%, var(--khaki) 98%, transparent 100%),
+    radial-gradient(circle 2px at 40% 80%, var(--khaki-dark) 98%, transparent 100%),
+    repeating-linear-gradient(
+      100deg,
+      transparent 0 18%,
+      rgba(255, 255, 255, 0.85) 18% 24%,
+      transparent 24% 42%
+    );
+  animation: brush-sweep 640ms ease-out forwards;
   pointer-events: none;
 }
 
 @keyframes brush-pop {
   0% {
-    filter: brightness(1.6) saturate(0.3);
-    transform: scale(0.93);
+    filter: brightness(1.5) saturate(0.35);
+    transform: scale(0.95);
   }
   55% {
-    filter: brightness(1.15);
-    transform: scale(1.05);
+    filter: brightness(1.12);
+    transform: scale(1.03);
   }
   100% {
     filter: brightness(1) saturate(1);
@@ -669,23 +1025,32 @@ a.cell:target::before {
 }
 
 @keyframes brush-sweep {
-  from {
-    transform: translateX(-130%);
+  0% {
+    transform: translateX(-130%) scale(0.9);
+    opacity: 1;
   }
-  to {
-    transform: translateX(130%);
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(130%) scale(1.15);
+    opacity: 0;
   }
 }
 
 .grid-tag {
   position: absolute;
-  bottom: 2px;
+  bottom: 3px;
   right: 3px;
-  font-family: var(--font-display);
+  padding: 0.05rem 0.3rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
   font-size: 0.55rem;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.7);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  color: var(--ink);
+  background: var(--gold);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
   pointer-events: none;
 }
 
@@ -724,9 +1089,12 @@ a.cell:target::before {
   border-radius: 2px;
 }
 
-/* ---------- Field note page ---------- */
+/* ---------- Field note page: a specimen record, like a museum catalog
+   page ---------- */
 
 .note-card {
+  position: relative;
+  max-width: 44rem;
   padding: 1.5rem;
   background: var(--paper-hi);
   border: var(--line) solid var(--ink);
@@ -739,26 +1107,29 @@ a.cell:target::before {
 }
 
 .note-card .fragment {
+  position: relative;
   padding: 1rem;
   margin: 0.75rem 0 1.25rem;
   font-family: "Comic Sans MS", "Comic Sans", sans-serif;
   background: #000033;
   color: #ffff66;
-  border: var(--line-thin) solid var(--ink);
+  border: var(--line-thin) solid var(--khaki-dark);
+  box-shadow: 0 0 0 2px var(--ink);
   border-radius: 6px;
 }
 
 .note-card h2 {
   font-family: var(--font-display);
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  font-size: 1rem;
+  font-style: italic;
   color: var(--terracotta);
   margin-bottom: 0.4rem;
 }
 
 .note-card [data-finder],
 .note-card [data-brusher] {
+  font-family: var(--font-body);
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
@@ -784,6 +1155,7 @@ a.cell:target::before {
 .tray-empty {
   margin: 0;
   padding: 0.3rem;
+  font-family: var(--font-body);
   font-size: 0.85rem;
   color: var(--ink-soft);
   text-align: center;
@@ -805,8 +1177,9 @@ a.cell:target::before {
   list-style: none;
 }
 
-/* Each tray item reads as a tagged specimen bag: a little label tied to
-   the fragment it describes. */
+/* Each tray item reads as a mounted museum specimen: a little tag on a
+   string, tied to the fragment it describes, popping into place as if
+   just set down on the tray. */
 .tray-tag {
   display: flex;
   align-items: center;
@@ -815,16 +1188,40 @@ a.cell:target::before {
   background: var(--paper-hi);
   border: var(--line-thin) solid var(--ink);
   border-radius: 6px;
+  animation: specimen-settle 280ms ease-out;
+}
+
+@keyframes specimen-settle {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .tray-tag-ref {
+  position: relative;
   flex: none;
   padding: 0.15rem 0.4rem;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
+  font-weight: 700;
   font-size: 0.65rem;
   color: var(--paper-hi);
   background: var(--ink);
   border-radius: 4px;
+}
+
+.tray-tag-ref::before {
+  content: "";
+  position: absolute;
+  top: -0.4rem;
+  left: 50%;
+  width: 1.5px;
+  height: 0.45rem;
+  background: var(--ink-soft);
 }
 
 .tray-tag-fragment {
@@ -870,9 +1267,9 @@ a.cell:target::before {
 .panel-link {
   display: inline-block;
   margin-top: 0.6rem;
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.78rem;
   color: var(--blue);
   text-decoration: none;
 }
@@ -881,8 +1278,9 @@ a.cell:target::before {
   text-decoration: underline;
 }
 
-/* ---------- Field notes & theories: speech bubbles, not boxes, because
-   these are visitors talking to each other ---------- */
+/* ---------- Field notes & theories: pages pinned into the expedition
+   journal, each stamped with what kind of entry it is so the two feeds
+   read as different rather than identical lists ---------- */
 
 .feed-form {
   display: flex;
@@ -894,6 +1292,7 @@ a.cell:target::before {
 .feed-form textarea {
   padding: 0.5rem 0.7rem;
   font: inherit;
+  font-family: var(--font-body);
   font-size: 0.9rem;
   resize: vertical;
   border: var(--line-thin) solid var(--ink);
@@ -909,50 +1308,85 @@ a.cell:target::before {
 .feed {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
   margin: 0;
-  padding: 0;
+  padding: 0.4rem 0 0;
   list-style: none;
-  max-height: 19rem;
+  max-height: 22rem;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .feed-item {
   position: relative;
-  margin-left: 0.6rem;
-  padding: 0.6rem 0.8rem;
+  padding: 0.7rem 0.8rem 0.6rem;
   background: var(--paper-hi);
   border: var(--line-thin) solid var(--ink);
-  border-radius: 14px;
+  border-radius: 3px;
   box-shadow: var(--shadow-sm);
+  border-left-width: 6px;
 }
 
+/* A small pin head at the top, as if tacked to a corkboard page. */
 .feed-item::before {
   content: "";
   position: absolute;
-  left: -0.55rem;
-  bottom: 0.4rem;
-  width: 0.7rem;
-  height: 0.7rem;
-  background: var(--paper-hi);
-  border-left: var(--line-thin) solid var(--ink);
-  border-bottom: var(--line-thin) solid var(--ink);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  top: -0.3rem;
+  left: 1rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  background: var(--terracotta);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.feed-item.note-item {
+  border-left-color: var(--blue);
+}
+
+.feed-item.theory-item {
+  border-left-color: var(--terracotta);
+}
+
+.feed-item.note-item::before {
+  background: var(--blue);
+}
+
+.feed-item.theory-item::before {
+  background: var(--terracotta);
 }
 
 .feed-item p {
   margin: 0;
-  font-size: 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
 }
 
 .feed-item .feed-meta {
-  margin-top: 0.35rem;
-  font-family: var(--font-display);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
   font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   color: var(--blue);
+}
+
+.feed-item.theory-item .feed-meta {
+  color: var(--terracotta-dark);
+}
+
+.feed-item .feed-meta::before {
+  content: "Observed by";
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.feed-item.theory-item .feed-meta::before {
+  content: "Theorized by";
 }
 
 .feed-empty {
@@ -961,6 +1395,7 @@ a.cell:target::before {
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem;
+  font-family: var(--font-body);
   font-size: 0.85rem;
   font-style: italic;
   color: var(--ink-soft);
@@ -976,8 +1411,8 @@ a.cell:target::before {
 
 .specimen-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 1.1rem;
   margin: 1.5rem 0 0;
   padding: 0;
   list-style: none;
@@ -992,16 +1427,29 @@ a.cell:target::before {
   border: var(--line) solid var(--ink);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  animation: specimen-settle 280ms ease-out;
 }
 
 .specimen-ref {
+  position: relative;
   align-self: flex-start;
   padding: 0.15rem 0.5rem;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
+  font-weight: 700;
   font-size: 0.7rem;
   color: var(--paper-hi);
   background: var(--ink);
   border-radius: 4px;
+}
+
+.specimen-ref::before {
+  content: "";
+  position: absolute;
+  top: -0.4rem;
+  left: 50%;
+  width: 1.5px;
+  height: 0.45rem;
+  background: var(--ink-soft);
 }
 
 .specimen-card .fragment {
@@ -1011,7 +1459,8 @@ a.cell:target::before {
   font-family: "Comic Sans MS", "Comic Sans", sans-serif;
   background: #000033;
   color: #ffff66;
-  border: var(--line-thin) solid var(--ink);
+  border: var(--line-thin) solid var(--khaki-dark);
+  box-shadow: 0 0 0 2px var(--ink);
   border-radius: 6px;
 }
 

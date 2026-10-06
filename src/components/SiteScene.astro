@@ -1,0 +1,48 @@
+---
+// A wide decorative backdrop for the dig site: horizon, sun, distant hills,
+// a palm cluster and a broken column, all flat ligne claire shapes so the
+// excavation grid reads as sitting in a landscape rather than floating on
+// a plain background. Purely decorative, nothing here is informational.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 400 130" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+  <rect x="0" y="0" width="400" height="92" fill="#8fd0ea" />
+  <circle cx="54" cy="38" r="20" fill="#e3ac3d" stroke="#15120d" stroke-width="2.5" />
+  <path
+    d="M120 92 Q168 48 220 92 Z"
+    fill="#6a9a52"
+    stroke="#15120d"
+    stroke-width="2.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M220 92 Q262 60 312 92 Z"
+    fill="#4f8a3d"
+    stroke="#15120d"
+    stroke-width="2.5"
+    stroke-linejoin="round"
+  />
+  <g stroke="#15120d" stroke-width="2" stroke-linecap="round" fill="none">
+    <path d="M344 92 L348 54" />
+    <path d="M348 58 Q336 50 328 56" fill="#4f8a3d" />
+    <path d="M348 58 Q360 48 370 56" fill="#4f8a3d" />
+    <path d="M348 54 Q338 44 332 48" fill="#6a9a52" />
+    <path d="M348 54 Q358 42 368 48" fill="#6a9a52" />
+  </g>
+  <g stroke="#15120d" stroke-width="2" stroke-linejoin="round">
+    <rect x="70" y="60" width="9" height="32" fill="#c9a877" />
+    <rect x="65" y="56" width="19" height="7" fill="#b4863f" />
+    <path d="M67 92 L87 92 L84 78 L70 78 Z" fill="#8a6225" />
+  </g>
+  <rect x="0" y="92" width="400" height="38" fill="#b4863f" />
+  <path
+    d="M0 92 L20 96 L45 91 L70 97 L95 92 L120 96 L145 91 L170 97 L195 92 L220 96 L245 91 L270 97 L295 92 L320 96 L345 91 L370 97 L400 92 L400 130 L0 130 Z"
+    fill="#b4863f"
+    stroke="#15120d"
+    stroke-width="2.5"
+  />
+</svg>

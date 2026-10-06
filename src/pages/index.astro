@@ -1,6 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Companion from "../components/Companion.astro";
+import SiteScene from "../components/SiteScene.astro";
+import SiteBoundary from "../components/SiteBoundary.astro";
+import Props from "../components/Props.astro";
+import Stamp from "../components/Stamp.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
@@ -35,11 +39,14 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 ---
 
 <Layout title="The Dig">
-  <h1>Something is buried here</h1>
-  <p>
-    An old website lies under this soil. Each visitor gets {DIGS_PER_DAY} digs a day; dig to feel
-    for something, brush to reveal it, then click it to inspect the find.
-  </p>
+  <div class="dossier deckle-edge">
+    <Stamp>Expedition log</Stamp>
+    <h1>Something is buried here</h1>
+    <p>
+      An old website lies under this soil. Each visitor gets {DIGS_PER_DAY} digs a day; dig to
+      feel for something, brush to reveal it, then click it to inspect the find.
+    </p>
+  </div>
 
   {
     isNew && (
@@ -67,6 +74,18 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
   <div class="excavation-layout">
     <div class="dig-pane">
+      <div class="scene">
+        <SiteScene class="scene-backdrop" />
+        <SiteBoundary class="scene-boundary" />
+        <div class="props-cluster">
+          <Props name="trowel" class="prop prop-trowel" />
+          <Props name="compass" class="prop prop-compass" />
+          <Props name="flag" class="prop prop-flag" />
+          <Props name="crate" class="prop prop-crate" />
+          <Props name="shovel" class="prop prop-shovel" />
+          <Props name="hand-brush" class="prop prop-hand-brush" />
+          <Props name="clipboard" class="prop prop-clipboard" />
+        </div>
       <div class="grid-frame">
         <div class="grid-corner" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
@@ -139,10 +158,20 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         }
       </fieldset>
       </div>
+      </div>
     </div>
 
     <aside class="field-pane">
-      <section class="panel" id="tray" aria-labelledby="tray-heading">
+      <input type="radio" name="field-tab" id="tab-tray" class="visually-hidden" checked />
+      <input type="radio" name="field-tab" id="tab-notes" class="visually-hidden" />
+      <input type="radio" name="field-tab" id="tab-theories" class="visually-hidden" />
+      <div class="tab-bar" role="tablist" aria-label="Field pane">
+        <label for="tab-tray" class="tab-label">Tray</label>
+        <label for="tab-notes" class="tab-label">Field notes</label>
+        <label for="tab-theories" class="tab-label">Theories</label>
+      </div>
+
+      <section class="panel tab-panel" id="tray" aria-labelledby="tray-heading">
         <h2 id="tray-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18l-2 3H5L3 6Z"/><path d="M4 6v1a8 8 0 0 0 16 0V6"/><path d="M12 10v8"/></svg> Specimen tray</h2>
         <div id="tray-drop" class="tray-drop" data-tray-drop>
           {
@@ -171,7 +200,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         {tray.length > 0 && <a href="/archive" class="panel-link">Open full archive →</a>}
       </section>
 
-      <section class="panel" id="notes" aria-labelledby="notes-heading">
+      <section class="panel tab-panel" id="notes" aria-labelledby="notes-heading">
         <h2 id="notes-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z"/></svg> Field notes</h2>
         <form method="post" action="/api/notes" class="feed-form">
           <label for="note-body" class="visually-hidden">Leave a field note</label>
@@ -188,7 +217,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             )
           }
           {notes.map((n) => (
-            <li class="feed-item">
+            <li class="feed-item note-item">
               <p>{n.body}</p>
               <p class="feed-meta"><strong>{n.author}</strong></p>
             </li>
@@ -196,7 +225,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         </ul>
       </section>
 
-      <section class="panel" id="theories" aria-labelledby="theories-heading">
+      <section class="panel tab-panel" id="theories" aria-labelledby="theories-heading">
         <h2 id="theories-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg> Theories</h2>
         <form method="post" action="/api/theories" class="feed-form">
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
@@ -213,7 +242,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             )
           }
           {theories.map((t) => (
-            <li class="feed-item">
+            <li class="feed-item theory-item">
               <p>{t.body}</p>
               <p class="feed-meta"><strong>{t.author}</strong></p>
             </li>

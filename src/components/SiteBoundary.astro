@@ -1,0 +1,38 @@
+---
+// A rope-and-stake boundary line, as if the whole scene had been taped
+// off for excavation. A thin repeating ribbon, not a landscape, so
+// stretching it to fill the width never looks smeared. Purely decorative.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg
+  class={className}
+  viewBox="0 0 400 34"
+  preserveAspectRatio="none"
+  aria-hidden="true"
+>
+  <g stroke="#15120d" stroke-width="2" stroke-linecap="round" fill="none">
+    <path d="M10 30 V10" />
+    <path d="M110 30 V10" />
+    <path d="M210 30 V10" />
+    <path d="M310 30 V10" />
+    <path d="M390 30 V10" />
+  </g>
+  <g fill="#8a6225" stroke="#15120d" stroke-width="2" stroke-linejoin="round">
+    <rect x="6" y="4" width="8" height="8" rx="1.5" />
+    <rect x="106" y="4" width="8" height="8" rx="1.5" />
+    <rect x="206" y="4" width="8" height="8" rx="1.5" />
+    <rect x="306" y="4" width="8" height="8" rx="1.5" />
+    <rect x="386" y="4" width="8" height="8" rx="1.5" />
+  </g>
+  <path
+    d="M10 12 Q60 26 110 12 Q160 26 210 12 Q260 26 310 12 Q360 26 390 12"
+    stroke="#c23b28"
+    stroke-width="2.4"
+    fill="none"
+    stroke-linecap="round"
+  />
+</svg>

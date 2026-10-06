@@ -1,0 +1,10 @@
+---
+// A rubber-stamp styled badge: a rotated bold-bordered tag, used for status
+// chips and panel labels in place of plain pill chips.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<span class={`stamp ${className ?? ""}`}><slot /></span>

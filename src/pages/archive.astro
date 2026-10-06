@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Companion from "../components/Companion.astro";
+import Stamp from "../components/Stamp.astro";
 import { openSite } from "../lib/dig";
 import { trayFor } from "../lib/specimens";
 import { gridRef } from "../sites";
@@ -12,8 +13,11 @@ const tray = trayFor(visitor.id, siteId);
 ---
 
 <Layout title="Your archive, The Dig">
-  <h1>Your specimen tray</h1>
-  <p>Finds you've collected from the current dig, {visitor.name}.</p>
+  <div class="dossier deckle-edge">
+    <Stamp>Cabinet of curiosities</Stamp>
+    <h1>Your specimen tray</h1>
+    <p>Finds you've collected from the current dig, {visitor.name}.</p>
+  </div>
 
   {
     tray.length === 0 ? (
