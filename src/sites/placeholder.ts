@@ -26,7 +26,7 @@ const body = [
   ["I'm 16 and I live", "in Wagga. I like", "anime, Sailor Moon,", "and my two cats,", "Mochi &amp; Bean."],
   ["Mochi is the grey", "one. Bean is the", "orange one who", "knocks everything", "off my desk."],
   ["NEW!! 03/02/2001:", "added a poems page", "and fixed the", "broken links. Sorry", "about the popups!!"],
-  ["<i>a poem —</i>", "<i>the dial-up hums</i>", "<i>like the sea</i>", "<i>i am waiting</i>", "<i>for you to load</i>"],
+  ["<i>a poem,</i>", "<i>the dial-up hums</i>", "<i>like the sea</i>", "<i>i am waiting</i>", "<i>for you to load</i>"],
   [
     "<b>xXdragonXx</b>: cool site!!",
     "<b>bean_fan</b>: ur cats r so cute",

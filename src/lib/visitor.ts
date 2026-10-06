@@ -18,9 +18,9 @@ export function findVisitor(cookies: AstroCookies): Visitor | undefined {
   return id ? db.select().from(visitors).where(eq(visitors.id, id)).get() : undefined;
 }
 
-export function getOrCreateVisitor(cookies: AstroCookies): Visitor {
+export function getOrCreateVisitor(cookies: AstroCookies): { visitor: Visitor; isNew: boolean } {
   const existing = findVisitor(cookies);
-  if (existing) return existing;
+  if (existing) return { visitor: existing, isNew: false };
 
   const visitor = db
     .insert(visitors)
@@ -34,5 +34,13 @@ export function getOrCreateVisitor(cookies: AstroCookies): Visitor {
     secure: import.meta.env.PROD,
     maxAge: ONE_YEAR_S,
   });
-  return visitor;
+  return { visitor, isNew: true };
+}
+
+// Visitors can rename themselves at any time, most prominently right after
+// their first visit. Blank or whitespace-only input is ignored, not an error.
+export function setName(visitorId: string, name: string): void {
+  const trimmed = name.trim().slice(0, 40);
+  if (!trimmed) return;
+  db.update(visitors).set({ name: trimmed }).where(eq(visitors.id, visitorId)).run();
 }
