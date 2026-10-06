@@ -49,9 +49,10 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* No smooth-scroll: every dig/brush/archive action is a full page reload
+   that lands on a #cell-row-col anchor, and animating that jump on every
+   single reload reads as the page scrolling to the top first, not as a
+   nice scroll to the cell. */
 
 body {
   margin: 0;
