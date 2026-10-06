@@ -1,22 +1,60 @@
 :root {
+  --earth-dark: #2a1d14;
   --earth: #3b2a1e;
+  --earth-hi: #4e3826;
   --soil: #6b4a33;
-  --soil-hi: #85603f;
-  --sand: #e9dcc4;
+  --soil-hi: #8a6341;
+  --soil-lo: #523823;
+  --sand: #ece0c8;
+  --sand-hi: #f6efdd;
+  --parchment: #fbf5e8;
   --ink: #241a12;
+  --ink-soft: #4a392b;
   --accent: #c9762c;
+  --accent-hi: #e2924a;
+  --accent-dark: #9c5a1e;
+  --ok: #4f7a4a;
+  --warn: #a8481f;
+
+  --shadow-sm: 0 1px 2px rgba(36, 26, 18, 0.18);
+  --shadow-md: 0 6px 16px -6px rgba(36, 26, 18, 0.35);
+  --shadow-lg: 0 16px 40px -12px rgba(36, 26, 18, 0.45);
+  --radius: 10px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  background: var(--sand);
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 60rem 40rem at 15% -10%, rgba(255, 239, 210, 0.55), transparent 60%),
+    radial-gradient(ellipse 50rem 35rem at 110% 10%, rgba(201, 118, 44, 0.12), transparent 55%),
+    linear-gradient(180deg, var(--sand-hi), var(--sand) 40%, var(--sand) 100%);
   color: var(--ink);
-  font-family: Georgia, "Times New Roman", serif;
-  line-height: 1.5;
+  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
+  line-height: 1.55;
+  position: relative;
+}
+
+/* A faint paper grain over everything, built from an inline SVG noise filter —
+   no image asset, just texture so flat colour fields don't look dead. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
 }
 
 a {
@@ -26,102 +64,264 @@ a {
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
+/* ---------- Header ---------- */
+
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: var(--earth);
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(180deg, var(--earth-hi), var(--earth) 70%, var(--earth-dark));
   color: var(--sand);
+  box-shadow: var(--shadow-md);
+  border-bottom: 2px solid var(--soil-lo);
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: bold;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
   text-decoration: none;
+  color: var(--sand-hi);
+}
+
+.wordmark svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: none;
+  color: var(--accent-hi);
 }
 
 .site-header nav {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
+  font-size: 0.95rem;
 }
 
-main {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 1rem;
+.site-header nav a {
+  position: relative;
+  text-decoration: none;
+  color: var(--sand);
+  padding-bottom: 0.2rem;
 }
+
+.site-header nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent-hi);
+  transition: right 160ms ease;
+}
+
+.site-header nav a:hover::after,
+.site-header nav a:focus-visible::after {
+  right: 0;
+}
+
+/* ---------- Layout ---------- */
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 50rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  margin: 0 0 0.5rem;
+  color: var(--earth-dark);
+}
+
+main > p {
+  color: var(--ink-soft);
+  max-width: 42rem;
+}
+
+/* ---------- Status strip ---------- */
 
 .status {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.5rem;
-  margin: 0.5rem 0 1rem;
+  gap: 0.6rem;
+  margin: 1.1rem 0 1.4rem;
+  padding: 0;
+  list-style: none;
 }
+
+.status span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--parchment);
+  border: 1px solid rgba(107, 74, 51, 0.25);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.status strong {
+  font-size: 1rem;
+  color: var(--earth-dark);
+}
+
+/* ---------- Flash message ---------- */
 
 .flash {
-  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
   border-left: 4px solid var(--accent);
-  background: #f6eee0;
+  background: var(--parchment);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  box-shadow: var(--shadow-sm);
+  animation: flash-in 220ms ease-out;
 }
 
-/* The excavation: a 6x10 grid, one cell per section of the buried site. */
+.flash::before {
+  content: "●";
+  color: var(--accent);
+  font-size: 0.6rem;
+}
+
+@keyframes flash-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- The excavation grid ---------- */
+
 .grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
-  padding: 2px;
-  margin: 0;
+  gap: 3px;
+  padding: 3px;
+  margin: 1.5rem 0 0;
   border: 0;
-  background: var(--earth);
+  border-radius: var(--radius);
+  background: linear-gradient(170deg, var(--soil-lo), var(--earth-dark));
+  box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  animation: grid-settle 420ms ease-out;
+}
+
+@keyframes grid-settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.5rem;
-  padding: 0.25rem;
+  min-height: 3.75rem;
+  padding: 0.3rem;
   font-size: clamp(0.55rem, 1.7vw, 0.85rem);
-  line-height: 1.2;
+  line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
 button.cell {
   border: 0;
-  background: radial-gradient(circle at 30% 30%, var(--soil-hi), var(--soil));
+  background:
+    radial-gradient(circle at 28% 25%, rgba(255, 255, 255, 0.12), transparent 45%),
+    radial-gradient(circle at 70% 75%, rgba(0, 0, 0, 0.18), transparent 50%),
+    linear-gradient(160deg, var(--soil-hi), var(--soil) 60%, var(--soil-lo));
   color: transparent;
   cursor: pointer;
   font: inherit;
+  position: relative;
+  transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
 }
 
 button.cell:hover:not(:disabled) {
-  background: var(--soil-hi);
+  filter: brightness(1.15);
+  transform: translateY(-1px) scale(1.015);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  z-index: 1;
+}
+
+button.cell:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+  filter: brightness(0.95);
 }
 
 button.cell:disabled {
   cursor: not-allowed;
+  opacity: 0.55;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.12) 0 8px,
+      transparent 8px 16px
+    ),
+    linear-gradient(160deg, var(--soil), var(--soil-lo));
 }
 
-/* Recovered sections keep the buried site's own era styling. */
+/* Recovered sections keep the buried site's own era styling, but are
+   presented like a plaque: a card lifted out of the ground, catalogued. */
 a.cell {
   text-decoration: none;
   font-family: "Comic Sans MS", "Comic Sans", "Trebuchet MS", sans-serif;
   background: #000033;
   color: #ffff66;
+  position: relative;
+  box-shadow: var(--shadow-sm), inset 0 0 0 2px rgba(255, 255, 255, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
-a.cell:hover {
-  filter: brightness(1.2);
+a.cell::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-hi);
+  box-shadow: 0 0 4px var(--accent-hi);
+}
+
+a.cell:hover,
+a.cell:focus-visible {
+  filter: brightness(1.15);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-md), inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+  z-index: 1;
 }
 
 .kind-banner {
-  background: linear-gradient(#ff66cc, #9933ff) !important;
+  background: linear-gradient(100deg, #ff66cc, #9933ff) !important;
   color: #fff !important;
   font-weight: bold;
 }
@@ -148,23 +348,48 @@ a.cell:hover {
 }
 
 .counter {
-  font-family: monospace;
+  font-family: "Courier New", monospace;
   background: #000;
   color: #0f0;
   padding: 0 0.2em;
+  border-radius: 2px;
 }
 
+/* ---------- Field note page ---------- */
+
 .note-card {
-  padding: 1rem;
-  background: #fffaf0;
-  border: 1px solid var(--soil);
+  padding: 1.5rem;
+  background: var(--parchment);
+  border: 1px solid rgba(107, 74, 51, 0.3);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.note-card h1 {
+  margin-top: 0;
 }
 
 .note-card .fragment {
-  padding: 0.75rem;
+  padding: 1rem;
+  margin: 0.75rem 0 1.25rem;
   font-family: "Comic Sans MS", "Comic Sans", sans-serif;
   background: #000033;
   color: #ffff66;
+  border-radius: 6px;
+  box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.note-card h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-dark);
+  margin-bottom: 0.4rem;
+}
+
+.note-card [data-finder] {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
 .visually-hidden {
