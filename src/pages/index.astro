@@ -1,17 +1,17 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { COLS, ROWS, cellAt } from "../sites";
+import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
 import { listTheories } from "../lib/theories";
-import { trayCount } from "../lib/specimens";
+import { trayFor } from "../lib/specimens";
 import { getOrCreateVisitor } from "../lib/visitor";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
 const { id: siteId, site } = openSite();
 const found = findings(siteId);
 const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
-const tray = trayCount(visitor.id, siteId);
+const tray = trayFor(visitor.id, siteId);
 const notes = listNotes(siteId);
 const theories = listTheories(siteId);
 
@@ -58,7 +58,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
     <li>You are <strong>{visitor.name}</strong></li>
     <li data-digs-left={left}><strong>{left}</strong> of {DIGS_PER_DAY} digs left today</li>
     <li data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
-    <li><a href="/archive">🧺 <strong>{tray}</strong> in your tray</a></li>
+    <li><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
   </ul>
   {flash && <p class="flash" role="status">{flash}</p>}
 
@@ -66,6 +66,16 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
   <div class="excavation-layout">
     <div class="dig-pane">
+      <div class="grid-frame">
+        <div class="grid-corner" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+        </div>
+        <div class="grid-cols" aria-hidden="true">
+          {Array.from({ length: COLS }, (_, col) => <span>{colLabel(col)}</span>)}
+        </div>
+        <div class="grid-rows" aria-hidden="true">
+          {Array.from({ length: ROWS }, (_, row) => <span>{row + 1}</span>)}
+        </div>
       <fieldset class="grid">
         <legend class="visually-hidden">Dig site</legend>
         {
@@ -86,6 +96,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                       draggable="true"
                       set:html={cell.html}
                     />
+                    <span class="grid-tag" aria-hidden="true">{gridRef(row, col)}</span>
                     <form method="post" action="/api/archive" class="tray-add">
                       <input type="hidden" name="cell" value={key} />
                       <input type="hidden" name="action" value="add" />
@@ -126,14 +137,36 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           )
         }
       </fieldset>
+      </div>
     </div>
 
     <aside class="field-pane">
       <section class="panel" id="tray" aria-labelledby="tray-heading">
-        <h2 id="tray-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.5 11a2 2 0 0 1-2 1.8H7.5a2 2 0 0 1-2-1.8L4 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg> Specimen tray</h2>
-        <p id="tray-drop" class="tray-drop" data-tray-drop>
-          Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.
-        </p>
+        <h2 id="tray-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18l-2 3H5L3 6Z"/><path d="M4 6v1a8 8 0 0 0 16 0V6"/><path d="M12 10v8"/></svg> Specimen tray</h2>
+        <div id="tray-drop" class="tray-drop" data-tray-drop>
+          {
+            tray.length === 0 ? (
+              <p class="tray-empty">
+                Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.
+              </p>
+            ) : (
+              <ul class="tray-items">
+                {tray.map(({ row, col, cell }) => (
+                  <li class="tray-tag">
+                    <span class="tray-tag-ref">{gridRef(row, col)}</span>
+                    <a href={`/section/${row}-${col}`} class={`tray-tag-fragment kind-${cell.kind}`} set:html={cell.html} />
+                    <form method="post" action="/api/archive">
+                      <input type="hidden" name="cell" value={`${row}-${col}`} />
+                      <input type="hidden" name="action" value="remove" />
+                      <button type="submit" aria-label={`Remove ${gridRef(row, col)} from your tray`}>×</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </div>
+        {tray.length > 0 && <a href="/archive" class="panel-link">Open full archive →</a>}
       </section>
 
       <section class="panel" id="notes" aria-labelledby="notes-heading">

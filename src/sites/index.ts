@@ -12,3 +12,8 @@ export const FIRST_SITE = "placeholder";
 
 export const cellAt = (site: Site, row: number, col: number): Cell | undefined =>
   site.cells[row]?.[col];
+
+// Archaeological-style grid references for flavour (e.g. "B3"), purely
+// decorative labels alongside the plain row/col used everywhere functional.
+export const colLabel = (col: number): string => String.fromCharCode(65 + col);
+export const gridRef = (row: number, col: number): string => `${colLabel(col)}${row + 1}`;
