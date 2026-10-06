@@ -1,7 +1,13 @@
 # Your harness
 
-This file is yours, and it arrives empty on purpose. The rules you hold the
-agent to are part of what gets marked, so they should be rules you decided on.
+This file is yours: it should always have real content in it, not be left
+empty. Keep it updated as the rules you want to hold the agent to change.
+
+## Writing style
+
+- Don't use em dashes (—) anywhere: not in code comments, not in UI copy on
+  the deployed site, not in commit messages or docs. Use a comma, a period,
+  or a parenthetical instead.
 
 Nothing about the template is recorded here. What the repo ships is explained
 where it lives --- `fly.toml`, the `Dockerfile`, the CI workflow and
