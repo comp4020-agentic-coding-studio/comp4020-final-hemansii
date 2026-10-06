@@ -1,20 +1,16 @@
 ---
 // Publishes README.md verbatim, rendered. spec/invariants.test.ts checks its
 // headings show up here, in order.
+import Layout from "../layouts/Layout.astro";
+import Stamp from "../components/Stamp.astro";
 import * as readme from "../../README.md";
 
-const title = readme.getHeadings().find((h) => h.depth === 1)?.text ?? "README";
 const html = await readme.compiledContent();
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-  </head>
-  <body>
+<Layout title="About, The Dig">
+  <article class="dossier deckle-edge readme-content">
+    <Stamp>About this dig</Stamp>
     <div set:html={html} />
-  </body>
-</html>
+  </article>
+</Layout>
