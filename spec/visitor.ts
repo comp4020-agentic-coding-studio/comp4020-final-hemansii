@@ -18,7 +18,17 @@ export class TestVisitor {
 
   // Returns the outcome the server redirected with (?r=...).
   async dig(cell: string): Promise<string | null> {
-    const res = await fetch(new URL("/api/dig", this.baseUrl), {
+    return this.post("/api/dig", { cell });
+  }
+
+  // Brushing is a separate, uncapped action from digging: anyone can brush a
+  // dusty cell clean, not just whoever dug it.
+  async brush(cell: string): Promise<string | null> {
+    return this.post("/api/brush", { cell });
+  }
+
+  private async post(path: string, body: Record<string, string>): Promise<string | null> {
+    const res = await fetch(new URL(path, this.baseUrl), {
       method: "POST",
       redirect: "manual",
       headers: {
@@ -26,7 +36,7 @@ export class TestVisitor {
         "content-type": "application/x-www-form-urlencoded",
         ...(this.cookie ? { cookie: this.cookie } : {}),
       },
-      body: new URLSearchParams({ cell }),
+      body: new URLSearchParams(body),
     });
     this.keep(res);
     const location = res.headers.get("location");
@@ -39,11 +49,13 @@ export class TestVisitor {
   }
 }
 
-export const buriedCells = (doc: Document): string[] =>
-  [...doc.querySelectorAll('[data-state="buried"]')].map((el) => el.getAttribute("data-cell")!);
+export const cellsInState = (doc: Document, state: string): string[] =>
+  [...doc.querySelectorAll(`[data-state="${state}"]`)].map((el) => el.getAttribute("data-cell")!);
+
+export const buriedCells = (doc: Document): string[] => cellsInState(doc, "buried");
 
 export const stateOf = (doc: Document, cell: string): string | null | undefined =>
   doc.querySelector(`[data-cell="${cell}"]`)?.getAttribute("data-state");
 
 export const NOTHING_LEFT =
-  "no buried sections left to dig — locally, delete .data/app.db to reset the site";
+  "no buried sections left to dig, locally delete .data/app.db to reset the site";
