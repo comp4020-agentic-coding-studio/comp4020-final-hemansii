@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Companion from "../components/Companion.astro";
 import { openSite } from "../lib/dig";
 import { trayFor } from "../lib/specimens";
 import { gridRef } from "../sites";
@@ -16,8 +17,9 @@ const tray = trayFor(visitor.id, siteId);
 
   {
     tray.length === 0 ? (
-      <p class="flash" role="status">
-        Nothing in your tray yet, drag a recovered find here from the excavation, or use its
+      <p class="tray-empty">
+        <Companion class="companion" />
+        Nothing in your tray yet, drag a recovered find here from the excavation, or use its{" "}
         <strong>+</strong> button.
       </p>
     ) : (

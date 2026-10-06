@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Companion from "../components/Companion.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
@@ -147,6 +148,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           {
             tray.length === 0 ? (
               <p class="tray-empty">
+                <Companion class="companion" />
                 Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.
               </p>
             ) : (
@@ -177,7 +179,14 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           <button type="submit">Post note</button>
         </form>
         <ul class="feed">
-          {notes.length === 0 && <li class="feed-empty">No notes yet, be the first to leave one.</li>}
+          {
+            notes.length === 0 && (
+              <li class="feed-empty">
+                <Companion class="companion" />
+                No notes yet, be the first to leave one.
+              </li>
+            )
+          }
           {notes.map((n) => (
             <li class="feed-item">
               <p>{n.body}</p>
@@ -195,7 +204,14 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           <button type="submit">Post theory</button>
         </form>
         <ul class="feed">
-          {theories.length === 0 && <li class="feed-empty">No theories yet, what do you think this was?</li>}
+          {
+            theories.length === 0 && (
+              <li class="feed-empty">
+                <Companion class="companion" />
+                No theories yet, what do you think this was?
+              </li>
+            )
+          }
           {theories.map((t) => (
             <li class="feed-item">
               <p>{t.body}</p>
