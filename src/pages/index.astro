@@ -96,7 +96,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         <div class="grid-rows" aria-hidden="true">
           {Array.from({ length: ROWS }, (_, row) => <span>{row + 1}</span>)}
         </div>
-      <fieldset class="grid">
+      <fieldset class="grid" id="dig-grid">
         <legend class="visually-hidden">Dig site</legend>
         {
           Array.from({ length: ROWS }, (_, row) =>
@@ -207,7 +207,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           <textarea id="note-body" name="body" maxlength="300" rows="2" placeholder="Try row 4, col 1, looks promising…" required></textarea>
           <button type="submit">Post note</button>
         </form>
-        <ul class="feed">
+        <ul class="feed" id="notes-list">
           {
             notes.length === 0 && (
               <li class="feed-empty">
@@ -232,7 +232,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this site was…" required></textarea>
           <button type="submit">Post theory</button>
         </form>
-        <ul class="feed">
+        <ul class="feed" id="theories-list">
           {
             theories.length === 0 && (
               <li class="feed-empty">
@@ -253,13 +253,19 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
   </div>
 
   <script>
-    const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
-    if (drop) {
+    // Dragging a revealed cell into the tray only exists on this visitor's
+    // own screen, so it's wired fresh after every live resync below.
+    function wireDragHandles(): void {
       document.querySelectorAll<HTMLElement>(".cell[draggable]").forEach((el) => {
         el.addEventListener("dragstart", (e) => {
           e.dataTransfer?.setData("text/plain", el.dataset.cell ?? "");
         });
       });
+    }
+    wireDragHandles();
+
+    const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
+    if (drop) {
       drop.addEventListener("dragover", (e) => {
         e.preventDefault();
         drop.classList.add("drag-over");
@@ -278,5 +284,41 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         location.reload();
       });
     }
+
+    // Live layer: a dig, brush, note or theory anywhere reaches every open
+    // tab within about a second, with no reload. The tray is private to this
+    // visitor and isn't part of this, so it's left alone.
+    const LIVE_IDS = ["dig-grid", "notes-list", "theories-list"];
+
+    async function resync(): Promise<void> {
+      const res = await fetch(location.pathname, { cache: "no-store" });
+      if (!res.ok) return;
+      const fresh = new DOMParser().parseFromString(await res.text(), "text/html");
+
+      for (const id of LIVE_IDS) {
+        const next = fresh.getElementById(id);
+        const current = document.getElementById(id);
+        if (next && current) current.replaceWith(next);
+      }
+      for (const attr of ["data-digs-left", "data-recovered"]) {
+        const next = fresh.querySelector(`[${attr}]`);
+        const current = document.querySelector(`[${attr}]`);
+        if (next && current) current.replaceWith(next);
+      }
+      wireDragHandles();
+    }
+
+    let debounce: ReturnType<typeof setTimeout> | undefined;
+    const scheduleResync = (): void => {
+      clearTimeout(debounce);
+      debounce = setTimeout(resync, 150);
+    };
+
+    const events = new EventSource("/api/events");
+    events.addEventListener("message", scheduleResync);
+    // Fires on first connect too; harmless since the page just loaded with
+    // the same truth. After a dropped connection reconnects, this is what
+    // catches the visitor up on whatever happened while they were offline.
+    events.addEventListener("open", scheduleResync);
   </script>
 </Layout>

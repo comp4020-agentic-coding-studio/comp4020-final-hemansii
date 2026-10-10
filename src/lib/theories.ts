@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "./db";
+import { changed } from "./events";
 import { theories, visitors } from "./schema";
 
 export type TheoryEntry = { id: number; author: string; body: string; postedAt: string };
@@ -10,6 +11,7 @@ export function postTheory(visitorId: string, siteId: string, body: string): voi
   const trimmed = body.trim().slice(0, MAX_LEN);
   if (!trimmed) return;
   db.insert(theories).values({ siteId, visitorId, body: trimmed }).run();
+  changed(siteId);
 }
 
 export function listTheories(siteId: string, limit = 30): TheoryEntry[] {

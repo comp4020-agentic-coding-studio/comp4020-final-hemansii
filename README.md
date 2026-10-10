@@ -30,27 +30,40 @@ deliberate decision not to touch the data model or the no-JavaScript
 `:target` animation technique, to get there without breaking what the
 spec does check.
 
+For a crit called "all at once", good also means the shared world updates
+live: a dig, a brush, a note or a theory posted by one visitor reaches every
+other open session within about a second, with no reload, not just on their
+next page load. `spec/realtime.test.ts` checks that mechanically. What
+happens when two visitors reach for the same cell inside that same second is
+written down in
+[`docs/decisions/0001-live-same-cell-race.md`](docs/decisions/0001-live-same-cell-race.md),
+with the options considered and what the choice costs. Whether the live
+layer reads as a shared room rather than everyone quietly polling the same
+page is not something a test can check and is left to be judged.
+
 ## What this doesn't do
 
-No real-time updates: a visitor sees what others have done on their own
-next page load, not live. No decay ("silting") of untouched tiles over
-time, though the schema already timestamps every dig, so that is one
-migration away rather than a rewrite. No second buried site or an archive
-of closed ones; `sites.closedAt` exists in the schema for exactly that
-and isn't used yet. All three were left out on purpose rather than half
-built, so the one site that does exist works properly.
+No decay ("silting") of untouched tiles over time, though the schema already
+timestamps every dig, so that is one migration away rather than a rewrite.
+No second buried site or an archive of closed ones; `sites.closedAt` exists
+in the schema for exactly that and isn't used yet. Both were left out on
+purpose rather than half built, so the one site that does exist works
+properly.
 
 ## Enforced versus judged
 
 Enforced, in `spec/`: the app answers at `/`, `/readme/` publishes this
 file's headings in order, a dig and a brush persist and are visible to
-every visitor, each visitor gets exactly `DIGS_PER_DAY` digs, and a
-section's content never reaches the page before it has been brushed.
+every visitor, each visitor gets exactly `DIGS_PER_DAY` digs, a
+section's content never reaches the page before it has been brushed, and
+a dig, brush, note or theory reaches another open session over
+`/api/events` within a bounded time, with no reload.
 
 Judged, not tested: whether the three tile states, buried, dusty,
 revealed, read as a real excavation instead of three colours, whether the
 specimen tray and the field notes and theories feel like one
 collaborative investigation rather than three unrelated widgets bolted
-onto a grid, and whether the typography and layout choices in
-`CLAUDE.md` and `src/styles.css` actually deliver the calmer, wider feel
-the second redesign pass asked for.
+onto a grid, whether the typography and layout choices in `CLAUDE.md`
+and `src/styles.css` actually deliver the calmer, wider feel the second
+redesign pass asked for, and whether the live updates feel like a shared
+room rather than a mechanical refresh.

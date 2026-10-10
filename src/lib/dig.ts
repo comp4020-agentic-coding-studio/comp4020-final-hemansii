@@ -2,6 +2,7 @@ import { alias } from "drizzle-orm/sqlite-core";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { COLS, ROWS, SITES, type Site } from "../sites";
 import { db } from "./db";
+import { changed } from "./events";
 import { digs, sites, visitors } from "./schema";
 
 export const DIGS_PER_DAY = 5;
@@ -70,8 +71,9 @@ export function dig(visitorId: string, row: number, col: number): DigResult {
   if (!Number.isInteger(row) || !Number.isInteger(col)) return "out-of-range";
   if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return "out-of-range";
 
-  return db.transaction((tx) => {
-    const { id: siteId } = openSite();
+  let siteId = "";
+  const result = db.transaction((tx) => {
+    ({ id: siteId } = openSite());
     if (digsToday(visitorId) >= DIGS_PER_DAY) return "out-of-digs";
     const taken = tx
       .select({ id: digs.id })
@@ -84,6 +86,8 @@ export function dig(visitorId: string, row: number, col: number): DigResult {
       .run();
     return "ok";
   });
+  if (result === "ok") changed(siteId);
+  return result;
 }
 
 // Anyone can brush a dusty cell clean, not just whoever dug it: that's the
@@ -92,8 +96,9 @@ export function brush(visitorId: string, row: number, col: number): BrushResult 
   if (!Number.isInteger(row) || !Number.isInteger(col)) return "out-of-range";
   if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return "out-of-range";
 
-  return db.transaction((tx) => {
-    const { id: siteId } = openSite();
+  let siteId = "";
+  const result = db.transaction((tx) => {
+    ({ id: siteId } = openSite());
     const found = tx
       .select({ id: digs.id, brushedAt: digs.brushedAt })
       .from(digs)
@@ -107,4 +112,6 @@ export function brush(visitorId: string, row: number, col: number): BrushResult 
       .run();
     return "brushed";
   });
+  if (result === "brushed") changed(siteId);
+  return result;
 }
