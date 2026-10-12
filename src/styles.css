@@ -1711,10 +1711,9 @@ a.cell.live-arrived::before {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* ---------- Dig log: a ledger strip under the site, who did what, where ---------- */
+/* ---------- Dig log: a ledger page in the field pane, who did what, where ---------- */
 
 .dig-log {
-  margin-top: 1rem;
   padding: 0.7rem 1rem;
   background: var(--paper-hi);
   border: var(--line-thin) solid var(--ink);
@@ -1736,8 +1735,8 @@ a.cell.live-arrived::before {
 
 .dig-log ol {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
+  flex-direction: column;
+  gap: 0.2rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1970,11 +1969,6 @@ a.cell.live-arrived::before {
    Phones and short windows keep the normal scrolling page. */
 @media (min-width: 64rem) and (min-height: 36rem) {
   .fit-screen {
-    /* everything vertical that isn't grid rows, roughly; only used to size
-       the board's width, the height itself comes from flex */
-    --fit-chrome: 19rem;
-    --tile-ratio: 1.45;
-
     height: 100vh;
     height: 100dvh;
     min-height: 0;
@@ -2014,9 +2008,8 @@ a.cell.live-arrived::before {
     min-height: 0;
     margin-top: 0.7rem;
     gap: 1.25rem;
-    grid-template-columns: auto minmax(19rem, 28rem);
+    grid-template-columns: minmax(0, 1fr) clamp(19rem, 24vw, 25rem);
     grid-template-rows: minmax(0, 1fr);
-    justify-content: center;
     align-items: stretch;
   }
 
@@ -2024,10 +2017,6 @@ a.cell.live-arrived::before {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    width: min(
-      calc((100dvh - var(--fit-chrome)) * 0.6 * var(--tile-ratio) + 4.8rem),
-      calc(100vw - 19rem - 6.5rem)
-    );
   }
 
   .fit-screen .scene {
@@ -2076,30 +2065,18 @@ a.cell.live-arrived::before {
     bottom: 1.9rem;
   }
 
-  /* The dig log becomes a single ticker line under the board. */
+  /* The log takes whatever height the active panel leaves, and scrolls
+     inside itself if it runs long. */
   .fit-screen .dig-log {
-    flex: none;
-    display: flex;
-    align-items: baseline;
-    gap: 0.9rem;
-    margin-top: 0.6rem;
-    padding: 0.35rem 0.8rem;
+    flex: 1 0 7rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.6rem 0.9rem;
     background-image: none;
-    overflow: hidden;
-  }
-
-  .fit-screen .dig-log h2 {
-    flex: none;
-    margin: 0;
-    font-size: 0.9rem;
   }
 
   .fit-screen .dig-log ol {
-    flex-wrap: nowrap;
-    overflow: hidden;
-    white-space: nowrap;
-    font-size: 0.8rem;
-    mask-image: linear-gradient(to right, #000 85%, transparent);
+    font-size: 0.82rem;
   }
 
   .fit-screen .field-pane {
@@ -2138,7 +2115,29 @@ a.cell.live-arrived::before {
   .fit-screen #tab-tray:checked ~ #tray,
   .fit-screen #tab-notes:checked ~ #notes,
   .fit-screen #tab-theories:checked ~ #theories {
-    flex: 1;
+    flex: 0 1 auto;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .fit-screen .panel h2 {
+    margin-bottom: 0.4rem;
+    font-size: 1rem;
+  }
+
+  /* Floated rather than flexed: the hint has an inline <strong>, which
+     flex would split into separate columns. */
+  .fit-screen .tray-empty {
+    display: flow-root;
+    margin: 0;
+    text-align: left;
+    font-size: 0.82rem;
+  }
+
+  .fit-screen .tray-empty .companion {
+    float: left;
+    width: 2.2rem;
+    height: 2.2rem;
+    margin: 0 0.6rem 0 0;
   }
 
   .fit-screen .feed {

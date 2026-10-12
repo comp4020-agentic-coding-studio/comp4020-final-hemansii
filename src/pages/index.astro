@@ -19,7 +19,7 @@ const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
 const tray = trayFor(visitor.id, siteId);
 const notes = listNotes(siteId);
 const theories = listTheories(siteId);
-const activity = recentActivity(siteId);
+const activity = recentActivity(siteId, 14);
 const latestTheory = theories[0];
 
 const MESSAGES: Record<string, string> = {
@@ -171,17 +171,6 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
       </fieldset>
       </div>
       </div>
-      <section class="dig-log" aria-labelledby="dig-log-heading">
-        <h2 id="dig-log-heading">Dig log</h2>
-        <ol id="dig-log-list">
-          {activity.length === 0 && <li class="dig-log-empty">Nobody has broken ground yet.</li>}
-          {activity.map((a) => (
-            <li data-key={`${a.at}-${a.ref}-${a.verb}`}>
-              <strong>{a.who}</strong> {a.verb} <span class="dig-log-ref">{a.ref}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
     </div>
 
     <aside class="field-pane">
@@ -296,6 +285,17 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             </li>
           ))}
         </ul>
+      </section>
+      <section class="dig-log" aria-labelledby="dig-log-heading">
+        <h2 id="dig-log-heading">Dig log</h2>
+        <ol id="dig-log-list">
+          {activity.length === 0 && <li class="dig-log-empty">Nobody has broken ground yet.</li>}
+          {activity.map((a) => (
+            <li data-key={`${a.at}-${a.ref}-${a.verb}`}>
+              <strong>{a.who}</strong> {a.verb} <span class="dig-log-ref">{a.ref}</span>
+            </li>
+          ))}
+        </ol>
       </section>
     </aside>
   </div>
