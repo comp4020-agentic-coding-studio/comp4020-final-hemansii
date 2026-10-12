@@ -845,12 +845,14 @@ button.cell.dusty::after {
    (#cell-R-C), so :target picks out exactly the one that just changed, with
    no client-side JS: a burst pops behind it, debris kicks up and the tile
    squashes then settles as it lands. */
-button.cell.dusty:target {
+button.cell.dusty:target,
+button.cell.dusty.live-arrived {
   animation: dust-settle 320ms ease-out, dig-impact 560ms cubic-bezier(0.3, 1.3, 0.5, 1);
   z-index: 1;
 }
 
-button.cell.dusty:target::before {
+button.cell.dusty:target::before,
+button.cell.dusty.live-arrived::before {
   content: "";
   position: absolute;
   inset: -14px;
@@ -860,7 +862,8 @@ button.cell.dusty:target::before {
   pointer-events: none;
 }
 
-button.cell.dusty:target::after {
+button.cell.dusty:target::after,
+button.cell.dusty.live-arrived::after {
   animation: dust-settle 320ms ease-out, debris-kick 600ms ease-out forwards;
 }
 
@@ -986,12 +989,14 @@ a.cell:focus-visible {
 /* A freshly-brushed cell is this page's URL fragment on load: dust flecks
    fly off and a light sweep crosses it as the dirt comes away, pure CSS
    via :target. */
-a.cell:target {
+a.cell:target,
+a.cell.live-arrived {
   animation: brush-pop 620ms ease-out;
   z-index: 1;
 }
 
-a.cell:target::before {
+a.cell:target::before,
+a.cell.live-arrived::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1562,4 +1567,371 @@ a.cell:target::before {
   border: 0;
   border-top: var(--line-thin) solid var(--ink);
   margin: 1.5rem 0;
+}
+
+/* ---------- The mystery: the expedition's standing question, a luggage
+   tag pinned above the field pane so the objective is always in view ---------- */
+
+.mystery {
+  position: relative;
+  padding: 1.1rem 1.1rem 1rem 1.6rem;
+  background: var(--gold);
+  border: var(--line) solid var(--ink);
+  border-radius: 4px 18px 18px 4px;
+  box-shadow: var(--shadow);
+  transform: rotate(-0.6deg);
+}
+
+/* The tag's eyelet and string. */
+.mystery::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.45rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: -0.3rem;
+  background: var(--paper);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+}
+
+.mystery-kicker {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.mystery h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.mystery-latest p {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.mystery-latest q {
+  font-style: italic;
+}
+
+.mystery-count {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.mystery-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.mystery-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  background: var(--paper-hi);
+  color: var(--ink);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 6px;
+}
+
+/* ---------- Your name, changeable at any time from the status strip ---------- */
+
+.whoami details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.whoami details summary::-webkit-details-marker {
+  display: none;
+}
+
+.whoami-edit {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  color: var(--terracotta-dark);
+}
+
+.whoami details[open] .whoami-edit {
+  display: none;
+}
+
+.rename-inline {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.rename-inline input {
+  width: 11rem;
+  padding: 0.3rem 0.5rem;
+  font: inherit;
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.mystery-form button,
+.rename-inline button {
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--paper-hi);
+  background: var(--terracotta);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.mystery-form button:active,
+.rename-inline button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* ---------- Dig log: a ledger strip under the site, who did what, where ---------- */
+
+.dig-log {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  background: var(--paper-hi);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 3px;
+  box-shadow: var(--shadow-sm);
+  background-image: repeating-linear-gradient(
+    transparent 0 1.55rem,
+    rgba(59, 110, 165, 0.18) 1.55rem 1.6rem
+  );
+}
+
+.dig-log h2 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.dig-log ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.dig-log-ref {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0 0.3rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* ---------- Something another player just did, arriving live ---------- */
+
+.live-new {
+  animation: live-new 1.6s ease-out;
+}
+
+@keyframes live-new {
+  0% {
+    background-color: var(--gold);
+    transform: translateY(-6px);
+  }
+  20% {
+    transform: translateY(0);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.feed-item.live-new {
+  animation-name: live-new-card;
+}
+
+@keyframes live-new-card {
+  0% {
+    background-color: var(--gold);
+    transform: translateY(-6px) rotate(-1deg);
+  }
+  25% {
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    background-color: var(--paper-hi);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-new,
+  .feed-item.live-new,
+  button.cell.dusty.live-arrived,
+  button.cell.dusty.live-arrived::before,
+  button.cell.dusty.live-arrived::after,
+  a.cell.live-arrived,
+  a.cell.live-arrived::before {
+    animation: none;
+  }
+}
+
+.flash[hidden] {
+  display: none;
+}
+
+/* ---------- Slim top bar: a thin paper strip, so the dig site gets the
+   screen instead of a heavy band of chrome ---------- */
+
+.site-header {
+  padding: 0.45rem 1.5rem;
+  background: var(--paper-hi);
+  color: var(--ink);
+  border-bottom: var(--line-thin) solid var(--ink);
+  box-shadow: none;
+}
+
+.wordmark {
+  gap: 0.45rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.wordmark .mascot {
+  width: 1.7rem;
+  height: 1.7rem;
+  filter: none;
+}
+
+.site-header nav {
+  gap: 1.25rem;
+  font-size: 0.72rem;
+}
+
+.site-header nav a {
+  color: var(--ink-soft);
+}
+
+.site-header nav a::after {
+  background: var(--terracotta);
+}
+
+/* ---------- Expedition bar: title, one-line hint and status in one row ---------- */
+
+.expedition-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1.5rem;
+  padding: 0.4rem 0 0.8rem;
+  margin-bottom: 0.4rem;
+  border-bottom: var(--line-thin) dashed var(--khaki-dark);
+}
+
+.expedition-title h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+}
+
+.expedition-title p {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.expedition-bar .status {
+  margin: 0;
+  gap: 0.4rem;
+}
+
+.expedition-bar .status li,
+.expedition-bar .status li:nth-child(even) {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.76rem;
+  transform: none;
+}
+
+/* First-visit name prompt: one compact line, not a banner. */
+.rename-banner {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+  padding: 0.45rem 0.8rem;
+  margin: 0.6rem 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.rename-banner label {
+  font-size: 0.85rem;
+}
+
+.rename-banner .rename-row {
+  flex: 1 1 18rem;
+  flex-wrap: nowrap;
+}
+
+.rename-banner .rename-row input {
+  padding: 0.3rem 0.55rem;
+}
+
+.rename-banner .rename-row button {
+  padding: 0.35rem 0.8rem;
+  white-space: nowrap;
+}
+
+/* The outcome of an action floats as a toast over the page rather than
+   sitting in the flow, so it never shifts the grid under the cursor. */
+.flash {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 20;
+  max-width: min(92vw, 32rem);
+  margin: 0;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow);
+  animation: toast-in 220ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }

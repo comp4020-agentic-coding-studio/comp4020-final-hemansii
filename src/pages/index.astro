@@ -4,13 +4,13 @@ import Companion from "../components/Companion.astro";
 import SiteScene from "../components/SiteScene.astro";
 import SiteBoundary from "../components/SiteBoundary.astro";
 import Props from "../components/Props.astro";
-import Stamp from "../components/Stamp.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
 import { listTheories } from "../lib/theories";
 import { trayFor } from "../lib/specimens";
 import { getOrCreateVisitor } from "../lib/visitor";
+import { recentActivity } from "../lib/activity";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
 const { id: siteId, site } = openSite();
@@ -19,6 +19,8 @@ const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
 const tray = trayFor(visitor.id, siteId);
 const notes = listNotes(siteId);
 const theories = listTheories(siteId);
+const activity = recentActivity(siteId);
+const latestTheory = theories[0];
 
 const MESSAGES: Record<string, string> = {
   ok: "You felt something underneath, brush away the dust to see what it is.",
@@ -39,13 +41,26 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 ---
 
 <Layout title="The Dig">
-  <div class="dossier deckle-edge">
-    <Stamp>Expedition log</Stamp>
-    <h1>Something is buried here</h1>
-    <p>
-      An old website lies under this soil. Each visitor gets {DIGS_PER_DAY} digs a day; dig to
-      feel for something, brush to reveal it, then click it to inspect the find.
-    </p>
+  <div class="expedition-bar">
+    <div class="expedition-title">
+      <h1>Something is buried here</h1>
+      <p>Dig to feel for something, brush to reveal it. {DIGS_PER_DAY} digs a day each.</p>
+    </div>
+    <ul class="status" aria-live="polite">
+      <li class="whoami">
+        <details>
+          <summary>You are <strong>{visitor.name}</strong> <span class="whoami-edit">change</span></summary>
+          <form method="post" action="/api/visitor" class="rename-inline">
+            <label for="rename-inline" class="visually-hidden">Your name on the dig</label>
+            <input id="rename-inline" name="name" maxlength="40" value={visitor.name} autocomplete="off" />
+            <button type="submit">Save</button>
+          </form>
+        </details>
+      </li>
+      <li data-digs-left={left}><strong>{left}</strong> of {DIGS_PER_DAY} digs left today</li>
+      <li data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
+      <li id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
+    </ul>
   </div>
 
   {
@@ -62,13 +77,8 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
     )
   }
 
-  <ul class="status" aria-live="polite">
-    <li>You are <strong>{visitor.name}</strong></li>
-    <li data-digs-left={left}><strong>{left}</strong> of {DIGS_PER_DAY} digs left today</li>
-    <li data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
-    <li><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
-  </ul>
-  {flash && <p class="flash" role="status">{flash}</p>}
+  <p class="flash" role="status" id="flash" hidden={!flash}>{flash}</p>
+  <script type="application/json" id="flash-messages" set:html={JSON.stringify(MESSAGES)} />
 
   <form method="post" action="/api/dig" id="dig-form" class="visually-hidden" aria-hidden="true"></form>
 
@@ -113,6 +123,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                       id={`cell-${key}`}
                       data-cell={key}
                       data-state="revealed"
+                      title={`${gridRef(row, col)}: uncovered by ${finding.finder}${finding.brusher ? `, brushed clean by ${finding.brusher}` : ""}`}
                       draggable="true"
                       set:html={cell.html}
                     />
@@ -134,6 +145,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                     id={`cell-${key}`}
                     data-cell={key}
                     data-state="dusty"
+                    title={`${gridRef(row, col)}: uncovered by ${finding.finder}, waiting for a brush`}
                     formaction="/api/brush"
                     form="dig-form"
                     aria-label={`Brush row ${row + 1}, column ${col + 1}`}
@@ -159,9 +171,43 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
       </fieldset>
       </div>
       </div>
+      <section class="dig-log" aria-labelledby="dig-log-heading">
+        <h2 id="dig-log-heading">Dig log</h2>
+        <ol id="dig-log-list">
+          {activity.length === 0 && <li class="dig-log-empty">Nobody has broken ground yet.</li>}
+          {activity.map((a) => (
+            <li data-key={`${a.at}-${a.ref}-${a.verb}`}>
+              <strong>{a.who}</strong> {a.verb} <span class="dig-log-ref">{a.ref}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
 
     <aside class="field-pane">
+    <section class="mystery" id="mystery" aria-labelledby="mystery-heading">
+      <p class="mystery-kicker">The expedition's question</p>
+      <h2 id="mystery-heading">What do you think this site was?</h2>
+      <div id="mystery-latest" class="mystery-latest">
+        {
+          latestTheory ? (
+            <p>
+              <span class="mystery-count">{theories.length} {theories.length === 1 ? "theory" : "theories"} so far.</span>{" "}
+              Latest, from <strong>{latestTheory.author}</strong>: <q>{latestTheory.body}</q>
+            </p>
+          ) : (
+            <p>No one has ventured a guess yet. Dig, brush, and say what you think it was.</p>
+          )
+        }
+      </div>
+      <form method="post" action="/api/theories" class="mystery-form">
+        <input type="hidden" name="from" value="mystery" />
+        <label for="mystery-body" class="visually-hidden">Your theory about the buried site</label>
+        <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was someone's…" autocomplete="off" required />
+        <button type="submit">Log my theory</button>
+      </form>
+    </section>
+
       <input type="radio" name="field-tab" id="tab-tray" class="visually-hidden" checked />
       <input type="radio" name="field-tab" id="tab-notes" class="visually-hidden" />
       <input type="radio" name="field-tab" id="tab-theories" class="visually-hidden" />
@@ -174,6 +220,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
       <section class="panel tab-panel" id="tray" aria-labelledby="tray-heading">
         <h2 id="tray-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18l-2 3H5L3 6Z"/><path d="M4 6v1a8 8 0 0 0 16 0V6"/><path d="M12 10v8"/></svg> Specimen tray</h2>
         <div id="tray-drop" class="tray-drop" data-tray-drop>
+          <div id="tray-contents">
           {
             tray.length === 0 ? (
               <p class="tray-empty">
@@ -197,6 +244,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             )
           }
         </div>
+        </div>
         {tray.length > 0 && <a href="/archive" class="panel-link">Open full archive →</a>}
       </section>
 
@@ -217,7 +265,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             )
           }
           {notes.map((n) => (
-            <li class="feed-item note-item">
+            <li class="feed-item note-item" data-id={n.id}>
               <p>{n.body}</p>
               <p class="feed-meta"><strong>{n.author}</strong></p>
             </li>
@@ -242,7 +290,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
             )
           }
           {theories.map((t) => (
-            <li class="feed-item theory-item">
+            <li class="feed-item theory-item" data-id={t.id}>
               <p>{t.body}</p>
               <p class="feed-meta"><strong>{t.author}</strong></p>
             </li>
@@ -254,7 +302,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
   <script>
     // Dragging a revealed cell into the tray only exists on this visitor's
-    // own screen, so it's wired fresh after every live resync below.
+    // own screen, so it's wired fresh after every resync below.
     function wireDragHandles(): void {
       document.querySelectorAll<HTMLElement>(".cell[draggable]").forEach((el) => {
         el.addEventListener("dragstart", (e) => {
@@ -264,36 +312,55 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
     }
     wireDragHandles();
 
-    const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
-    if (drop) {
-      drop.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        drop.classList.add("drag-over");
+    // Shared regions every open tab keeps in step with, plus this visitor's
+    // own tray. The tray is still private: it's only ever refreshed from a
+    // fetch carrying this visitor's cookie, never pushed to anyone else.
+    const LIVE_IDS = [
+      "dig-grid",
+      "notes-list",
+      "theories-list",
+      "dig-log-list",
+      "mystery-latest",
+      "tray-contents",
+      "tray-count",
+    ];
+
+    // What each region looked like before a resync, so whatever just changed
+    // can be picked out and animated in.
+    function snapshot(): { states: Map<string, string>; ids: Set<string> } {
+      const states = new Map<string, string>();
+      document.querySelectorAll<HTMLElement>("#dig-grid [data-cell]").forEach((el) => {
+        states.set(el.dataset.cell ?? "", el.dataset.state ?? "");
       });
-      drop.addEventListener("dragleave", () => drop.classList.remove("drag-over"));
-      drop.addEventListener("drop", async (e) => {
-        e.preventDefault();
-        drop.classList.remove("drag-over");
-        const cell = e.dataTransfer?.getData("text/plain");
-        if (!cell) return;
-        await fetch("/api/archive", {
-          method: "POST",
-          headers: { "content-type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ cell, action: "add" }),
-        });
-        location.reload();
-      });
+      const ids = new Set<string>();
+      document
+        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
+        .forEach((el) => ids.add(el.dataset.id ?? el.dataset.key ?? ""));
+      return { states, ids };
     }
 
-    // Live layer: a dig, brush, note or theory anywhere reaches every open
-    // tab within about a second, with no reload. The tray is private to this
-    // visitor and isn't part of this, so it's left alone.
-    const LIVE_IDS = ["dig-grid", "notes-list", "theories-list"];
+    function markArrivals(before: ReturnType<typeof snapshot>): void {
+      document.querySelectorAll<HTMLElement>("#dig-grid [data-cell]").forEach((el) => {
+        const was = before.states.get(el.dataset.cell ?? "");
+        if (was && was !== el.dataset.state) el.classList.add("live-arrived");
+      });
+      document
+        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
+        .forEach((el) => {
+          if (!before.ids.has(el.dataset.id ?? el.dataset.key ?? "")) el.classList.add("live-new");
+        });
+    }
 
-    async function resync(): Promise<void> {
-      const res = await fetch(location.pathname, { cache: "no-store" });
-      if (!res.ok) return;
-      const fresh = new DOMParser().parseFromString(await res.text(), "text/html");
+    // Swaps the live regions for fresh ones in place, so the page never
+    // reloads and the scroll position never moves.
+    async function resync(html?: string): Promise<void> {
+      if (html === undefined) {
+        const res = await fetch(location.pathname, { cache: "no-store" });
+        if (!res.ok) return;
+        html = await res.text();
+      }
+      const fresh = new DOMParser().parseFromString(html, "text/html");
+      const before = snapshot();
 
       for (const id of LIVE_IDS) {
         const next = fresh.getElementById(id);
@@ -305,20 +372,90 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
         const current = document.querySelector(`[${attr}]`);
         if (next && current) current.replaceWith(next);
       }
+      markArrivals(before);
       wireDragHandles();
+    }
+
+    const flashEl = document.getElementById("flash");
+    const messages: Record<string, string> = JSON.parse(
+      document.getElementById("flash-messages")?.textContent ?? "{}",
+    );
+    let flashTimer: ReturnType<typeof setTimeout> | undefined;
+    const hideFlashSoon = (): void => {
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => flashEl && (flashEl.hidden = true), 3500);
+    };
+    if (flashEl && !flashEl.hidden) hideFlashSoon();
+
+    function showFlash(result: string | null): void {
+      const text = result ? messages[result] : undefined;
+      if (!flashEl || !text) return;
+      flashEl.textContent = text;
+      flashEl.hidden = false;
+      // restart the entrance animation for a repeated message
+      flashEl.style.animation = "none";
+      void flashEl.offsetWidth;
+      flashEl.style.animation = "";
+      hideFlashSoon();
+    }
+
+    // Posts an action the way its form would, then updates the page where it
+    // stands instead of following the redirect into a full reload.
+    async function act(action: string, body: URLSearchParams): Promise<void> {
+      const res = await fetch(action, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body,
+      });
+      const landed = new URL(res.url);
+      showFlash(landed.searchParams.get("r"));
+      await resync(res.ok && landed.pathname === location.pathname ? await res.text() : undefined);
+    }
+
+    const IN_PLACE = new Set(["/api/dig", "/api/brush", "/api/archive", "/api/notes", "/api/theories"]);
+
+    document.addEventListener("submit", (e) => {
+      const form = e.target as HTMLFormElement;
+      const submitter = e.submitter as HTMLButtonElement | null;
+      const action = submitter?.getAttribute("formaction") ?? form.getAttribute("action") ?? "";
+      if (!IN_PLACE.has(action)) return;
+      e.preventDefault();
+      const body = new URLSearchParams(new FormData(form, submitter) as unknown as Record<string, string>);
+      if (form.querySelector("[name=body]")) form.reset();
+      void act(action, body);
+    });
+
+    const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
+    if (drop) {
+      drop.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        drop.classList.add("drag-over");
+      });
+      drop.addEventListener("dragleave", () => drop.classList.remove("drag-over"));
+      drop.addEventListener("drop", (e) => {
+        e.preventDefault();
+        drop.classList.remove("drag-over");
+        const cell = e.dataTransfer?.getData("text/plain");
+        if (cell) void act("/api/archive", new URLSearchParams({ cell, action: "add" }));
+      });
     }
 
     let debounce: ReturnType<typeof setTimeout> | undefined;
     const scheduleResync = (): void => {
       clearTimeout(debounce);
-      debounce = setTimeout(resync, 150);
+      debounce = setTimeout(() => void resync(), 150);
     };
 
+    // Live layer: a dig, brush, note or theory anywhere reaches every open
+    // tab within about a second. A reconnect after a dropped connection
+    // resyncs too, to catch the visitor up on what they missed; the first
+    // connect doesn't, since the page has only just rendered.
     const events = new EventSource("/api/events");
     events.addEventListener("message", scheduleResync);
-    // Fires on first connect too; harmless since the page just loaded with
-    // the same truth. After a dropped connection reconnects, this is what
-    // catches the visitor up on whatever happened while they were offline.
-    events.addEventListener("open", scheduleResync);
+    let connectedBefore = false;
+    events.addEventListener("open", () => {
+      if (connectedBefore) scheduleResync();
+      connectedBefore = true;
+    });
   </script>
 </Layout>

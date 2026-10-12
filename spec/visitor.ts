@@ -27,6 +27,18 @@ export class TestVisitor {
     return this.post("/api/brush", { cell });
   }
 
+  async rename(name: string): Promise<string | null> {
+    return this.post("/api/visitor", { name });
+  }
+
+  async note(body: string): Promise<string | null> {
+    return this.post("/api/notes", { body });
+  }
+
+  async theory(body: string): Promise<string | null> {
+    return this.post("/api/theories", { body });
+  }
+
   private async post(path: string, body: Record<string, string>): Promise<string | null> {
     const res = await fetch(new URL(path, this.baseUrl), {
       method: "POST",
