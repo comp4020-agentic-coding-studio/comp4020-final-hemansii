@@ -1,9 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Companion from "../components/Companion.astro";
-import SiteScene from "../components/SiteScene.astro";
-import SiteBoundary from "../components/SiteBoundary.astro";
-import Props from "../components/Props.astro";
+import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
@@ -84,30 +82,17 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
   <div class="excavation-layout">
     <div class="dig-pane">
-      <div class="scene">
-        <SiteScene class="scene-backdrop" />
-        <SiteBoundary class="scene-boundary" />
-        <div class="props-cluster">
-          <Props name="trowel" class="prop prop-trowel" />
-          <Props name="compass" class="prop prop-compass" />
-          <Props name="flag" class="prop prop-flag" />
-          <Props name="crate" class="prop prop-crate" />
-          <Props name="shovel" class="prop prop-shovel" />
-          <Props name="hand-brush" class="prop prop-hand-brush" />
-          <Props name="clipboard" class="prop prop-clipboard" />
-        </div>
-      <div class="grid-frame">
-        <div class="grid-corner" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
-        </div>
-        <div class="grid-cols" aria-hidden="true">
-          {Array.from({ length: COLS }, (_, col) => <span>{colLabel(col)}</span>)}
-        </div>
-        <div class="grid-rows" aria-hidden="true">
-          {Array.from({ length: ROWS }, (_, row) => <span>{row + 1}</span>)}
-        </div>
-      <fieldset class="grid" id="dig-grid">
+      <div class="iso-field">
+      <div class="iso-stage">
+        <IsoSite layer="under" class="iso-under" />
+      <fieldset class="grid iso-plane" id="dig-grid">
         <legend class="visually-hidden">Dig site</legend>
+        {Array.from({ length: COLS }, (_, col) => (
+          <span class="iso-label" aria-hidden="true" style={`--x: ${col + 0.5}; --y: -0.6`}>{colLabel(col)}</span>
+        ))}
+        {Array.from({ length: ROWS }, (_, row) => (
+          <span class="iso-label" aria-hidden="true" style={`--x: -0.6; --y: ${row + 0.5}`}>{row + 1}</span>
+        ))}
         {
           Array.from({ length: ROWS }, (_, row) =>
             Array.from({ length: COLS }, (_, col) => {
@@ -118,15 +103,14 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                 return (
                   <div class="find">
                     <a
-                      class={`cell kind-${cell.kind}`}
+                      class="cell"
                       href={`/section/${key}`}
                       id={`cell-${key}`}
                       data-cell={key}
                       data-state="revealed"
                       title={`${gridRef(row, col)}: uncovered by ${finding.finder}${finding.brusher ? `, brushed clean by ${finding.brusher}` : ""}`}
                       draggable="true"
-                      set:html={cell.html}
-                    />
+                    ><span class="iso-face" data-kind={cell.kind} set:html={cell.html} /></a>
                     <span class="grid-tag" aria-hidden="true">{gridRef(row, col)}</span>
                     <form method="post" action="/api/archive" class="tray-add">
                       <input type="hidden" name="cell" value={key} />
@@ -169,6 +153,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           )
         }
       </fieldset>
+        <IsoSite layer="over" class="iso-over" />
       </div>
       </div>
     </div>
@@ -221,7 +206,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                 {tray.map(({ row, col, cell }) => (
                   <li class="tray-tag">
                     <span class="tray-tag-ref">{gridRef(row, col)}</span>
-                    <a href={`/section/${row}-${col}`} class={`tray-tag-fragment kind-${cell.kind}`} set:html={cell.html} />
+                    <a href={`/section/${row}-${col}`} class="tray-tag-fragment" data-kind={cell.kind} set:html={cell.html} />
                     <form method="post" action="/api/archive">
                       <input type="hidden" name="cell" value={`${row}-${col}`} />
                       <input type="hidden" name="action" value="remove" />

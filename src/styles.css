@@ -2145,3 +2145,794 @@ a.cell.live-arrived::before {
     overflow: visible;
   }
 }
+
+/* ---------- The isometric excavation ----------
+   One connected pit seen from above at an angle. The 6 x 10 grid is a flat
+   plane turned 45deg and squashed to half height, so each square tile reads
+   as a 2:1 diamond, and every tile is still its own button or link that
+   changes state independently. Depth shows the state: untouched soil is the
+   floor, a dug tile drops a step with dirt walls on its two far edges, and a
+   revealed tile drops further with the find lying in the hole. The walls,
+   rim, rope and kit around it are IsoSite.astro, drawn in the same units:
+   the stage is 12.81 x 7.16 tile sides, the floor's top corner at 7.82, 0.75. */
+
+.iso-field {
+  --grass: #8cc152;
+  --soil: #bd6a40;
+  --soil-hi: #c97a4d;
+  --soil-lo: #a85a33;
+  --wall-lit: #9a4d2b;
+  --wall-shade: #7c3b1f;
+  --floor-dug: #8e4626;
+  --floor-deep: #5a2c18;
+  --seam: rgba(59, 32, 20, 0.7);
+
+  container-type: inline-size;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 75%, rgba(40, 80, 20, 0.12), transparent 45%),
+    var(--grass);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.iso-stage {
+  --s: min(calc(100cqw / 12.81), calc(100cqh / 7.16));
+  position: relative;
+  width: calc(var(--s) * 12.81);
+  height: calc(var(--s) * 7.16);
+}
+
+.iso-under,
+.iso-over {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.iso-over {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.iso-rope path {
+  fill: none;
+  stroke: #f5efdc;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1.5px 0 rgba(43, 26, 14, 0.45));
+}
+
+.iso-stage #dig-grid {
+  position: absolute;
+  left: calc(var(--s) * 7.82);
+  top: calc(var(--s) * 0.75);
+  z-index: 2;
+  width: calc(var(--s) * 6);
+  height: calc(var(--s) * 10);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 0;
+  background: var(--soil-lo);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform-origin: 0 0;
+  transform: scale(1, 0.5) rotate(45deg);
+  animation: none;
+}
+
+.iso-stage #dig-grid::before {
+  content: none;
+}
+
+/* Anything that should stand upright on the tilted plane undoes its
+   transform: anchored at a point, then rotated and stretched back. */
+.iso-label,
+.iso-stage .iso-face,
+.iso-stage .tray-add {
+  position: absolute;
+  transform-origin: 0 0;
+  transform: rotate(-45deg) scale(1, 2) translate(-50%, -50%);
+}
+
+/* Survey markers on the far walls: lettered sectors, numbered units. */
+.iso-label {
+  left: calc(var(--x) * 100% / 6);
+  top: calc(var(--y) * 100% / 10);
+  z-index: 1;
+  padding: 0 0.3em;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: clamp(0.5rem, calc(var(--s) * 0.15), 0.78rem);
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--paper-hi);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.iso-stage .cell {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: inset 0 0 0 1px var(--seam);
+}
+
+.iso-stage .find {
+  min-height: 0;
+}
+
+/* Untouched ground: the floor of the pit, scored and pebbled like the
+   reference, each tile its own slab between dark seams. */
+.iso-stage button.cell {
+  background:
+    radial-gradient(ellipse 5% 4% at 72% 68%, #7a3d22 90%, transparent 100%),
+    radial-gradient(ellipse 4% 3% at 28% 78%, #e2a477 90%, transparent 100%),
+    radial-gradient(ellipse 3% 3% at 55% 30%, #7a3d22 90%, transparent 100%),
+    repeating-linear-gradient(
+      62deg,
+      transparent 0 14px,
+      rgba(90, 42, 20, 0.18) 14px 15.5px,
+      transparent 15.5px 31px
+    ),
+    linear-gradient(135deg, var(--soil-hi), var(--soil) 55%, var(--soil-lo));
+}
+
+.iso-stage button.cell::after {
+  background: rgba(70, 30, 12, 0.35);
+}
+
+.iso-stage button.cell:hover:not(:disabled) {
+  filter: brightness(1.12) saturate(1.05);
+  transform: none;
+}
+
+.iso-stage button.cell:disabled {
+  opacity: 1;
+  filter: saturate(0.6) brightness(0.88);
+  background: linear-gradient(135deg, var(--soil), var(--soil-lo));
+}
+
+/* Dug: one step down. The walls show on the tile's two far edges (top and
+   left before the turn), lit on one side and shaded on the other, with a
+   heap of loose spoil in the middle. */
+.iso-stage button.cell.dusty {
+  --wall: 20%;
+  background:
+    linear-gradient(to bottom, var(--wall-shade), var(--wall-lit)) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #a9583a, var(--wall-lit)) left / var(--wall) 100% no-repeat,
+    radial-gradient(ellipse 5% 4% at 70% 72%, #4e2512 90%, transparent 100%),
+    radial-gradient(ellipse 4% 3% at 40% 85%, #c98a5e 90%, transparent 100%),
+    var(--floor-dug);
+  box-shadow:
+    inset 0 0 0 1px var(--seam),
+    inset calc(var(--s) * 0.2) calc(var(--s) * 0.2) 0 -1px rgba(30, 14, 6, 0.35);
+}
+
+.iso-stage button.cell.dusty::after {
+  width: 34%;
+  height: 26%;
+  background: radial-gradient(circle at 40% 35%, #d38a5c, #a65a33 70%);
+  border: 1.5px solid #3b2014;
+  border-radius: 50%;
+  box-shadow:
+    -0.5rem 0.3rem 0 -0.3rem #a65a33,
+    0.55rem 0.35rem 0 -0.35rem #a65a33;
+}
+
+/* Revealed: dug right down, deeper walls and a dark floor, with the find
+   lying upright in the hole. */
+.iso-stage a.cell {
+  --wall: 30%;
+  font-family: inherit;
+  color: inherit;
+  background:
+    linear-gradient(to bottom, #5e2c15, #85401f) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #8a4423, #9a4d2b) left / var(--wall) 100% no-repeat,
+    var(--floor-deep);
+  box-shadow:
+    inset 0 0 0 1px var(--seam),
+    inset calc(var(--s) * 0.3) calc(var(--s) * 0.3) 0 -1px rgba(20, 8, 3, 0.4);
+}
+
+.iso-stage a.cell::after {
+  content: none;
+}
+
+.iso-stage a.cell:hover,
+.iso-stage a.cell:focus-visible {
+  transform: none;
+  box-shadow:
+    inset 0 0 0 1px var(--seam),
+    inset 0 0 0 3px var(--gold);
+}
+
+.iso-stage .iso-face {
+  left: 56%;
+  top: 56%;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(var(--s) * 1.05);
+  padding: 0.12em 0.35em;
+  font-family: "Comic Sans MS", "Comic Sans", "Trebuchet MS", sans-serif;
+  font-size: clamp(0.48rem, calc(var(--s) * 0.125), 0.8rem);
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: #ffff66;
+  background: #000033;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  box-shadow: 2px 3px 0 rgba(20, 8, 3, 0.45);
+  pointer-events: none;
+  transition: scale 140ms ease;
+}
+
+.iso-stage .find:hover,
+.iso-stage .find:focus-within {
+  z-index: 4;
+}
+
+.iso-stage .find:hover .iso-face,
+.iso-stage .find:focus-within .iso-face {
+  scale: 1.6;
+}
+
+.iso-stage .grid-tag {
+  display: none;
+}
+
+.iso-stage .tray-add {
+  left: 84%;
+  top: 16%;
+  z-index: 2;
+}
+
+.iso-stage .tray-add button {
+  width: clamp(0.85rem, calc(var(--s) * 0.2), 1.15rem);
+  height: clamp(0.85rem, calc(var(--s) * 0.2), 1.15rem);
+  font-size: clamp(0.6rem, calc(var(--s) * 0.15), 0.85rem);
+}
+
+/* One-screen layout: the field takes the dig pane's full height, so the
+   stage can size from whichever of width or height runs out first. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen .iso-field {
+    flex: 1;
+    min-height: 0;
+    container-type: size;
+  }
+
+  .fit-screen .excavation-layout {
+    grid-template-columns: minmax(0, 1fr) clamp(18rem, 22vw, 23rem);
+  }
+}
+
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen .tab-label {
+    padding-inline: 0.4rem;
+    white-space: nowrap;
+  }
+}
+
+/* On a phone the whole pit would shrink to tiles too small to tap, so tiles
+   keep a minimum size and the field pans sideways instead. */
+@media (max-width: 40rem) {
+  .iso-field {
+    place-items: start;
+    overflow-x: auto;
+  }
+
+  .iso-stage {
+    --s: max(3rem, min(calc(100cqw / 12.81), calc(100cqh / 7.16)));
+  }
+}
+
+/* =====================================================================
+   Polish pass: one visual language for the game.
+   Ink linework, parchment, turf and terracotta. Section labels are small
+   uppercase sans in terracotta; headings are italic Fraunces; reading
+   text is Source Serif; grid references are parchment tags with an ink
+   edge, everywhere they appear.
+   ===================================================================== */
+
+/* ---------- Stage geometry: a touch steeper than true isometric so the
+   plot fills more of the field's height (must match IsoSite.astro) ---------- */
+
+.iso-stage {
+  --s: min(calc(100cqw / 12.234), calc(100cqh / 7.622));
+  width: calc(var(--s) * 12.234);
+  height: calc(var(--s) * 7.622);
+}
+
+.iso-stage #dig-grid {
+  left: calc(var(--s) * 7.531);
+  top: calc(var(--s) * 0.6);
+  transform: scale(1, 0.58) rotate(45deg);
+}
+
+.iso-label,
+.iso-stage .iso-face,
+.iso-stage .tray-add {
+  transform: rotate(-45deg) scale(1, 1.72414) translate(-50%, -50%);
+}
+
+@media (max-width: 40rem) {
+  .iso-stage {
+    --s: max(3rem, min(calc(100cqw / 12.234), calc(100cqh / 7.622)));
+  }
+}
+
+.iso-field {
+  padding: 0;
+}
+
+.iso-rope {
+  fill: none;
+  stroke: #f5efdc;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1.5px 0 rgba(43, 26, 14, 0.45));
+}
+
+/* ---------- Grid references: one tag style ---------- */
+
+.iso-label,
+.dig-log-ref,
+.tray-tag-ref {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: #efe2c4;
+  border: 1.2px solid var(--ink);
+  border-radius: 2px;
+}
+
+.dig-log-ref,
+.tray-tag-ref {
+  padding: 0 0.3rem;
+  font-size: 0.66rem;
+}
+
+/* ---------- Tile states: three that read at a glance ----------
+   untouched: living turf, flush with the field
+   dug:       a step down into bright, dusty soil, waiting for a brush
+   revealed:  dug right down to a dark floor, the find lying in it */
+
+.iso-stage .cell {
+  box-shadow: inset 0 0 0 1px rgba(47, 77, 26, 0.5);
+}
+
+.iso-stage button.cell {
+  background:
+    radial-gradient(ellipse 7% 5% at 28% 34%, #5c9632 90%, transparent 100%),
+    radial-gradient(ellipse 6% 4% at 70% 66%, #5c9632 90%, transparent 100%),
+    radial-gradient(ellipse 5% 4% at 52% 82%, #6aa83a 90%, transparent 100%),
+    radial-gradient(circle at 64% 24%, #f3e27a 0 2.5%, transparent 3%),
+    linear-gradient(135deg, #95cb5f, #7db648 60%, #74ab41);
+}
+
+.iso-stage button.cell::after {
+  content: none;
+}
+
+.iso-stage button.cell:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(47, 77, 26, 0.5),
+    inset 0 0 0 3px rgba(250, 243, 226, 0.85);
+}
+
+.iso-stage button.cell:disabled {
+  filter: saturate(0.45) brightness(0.92);
+  background: linear-gradient(135deg, #8fb86a, #7aa35a);
+}
+
+.iso-stage button.cell.dusty {
+  --wall: 22%;
+  background:
+    radial-gradient(circle at 24% 62%, rgba(248, 232, 204, 0.95) 0 3%, transparent 3.6%),
+    radial-gradient(circle at 62% 34%, rgba(248, 232, 204, 0.9) 0 2.4%, transparent 3%),
+    radial-gradient(circle at 76% 78%, rgba(248, 232, 204, 0.9) 0 2.8%, transparent 3.4%),
+    radial-gradient(circle at 44% 86%, rgba(248, 232, 204, 0.8) 0 2%, transparent 2.6%),
+    radial-gradient(ellipse 60% 55% at 58% 58%, rgba(246, 226, 192, 0.55), transparent 70%),
+    linear-gradient(to bottom, #7a3a1c, #9c4e2a) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #a85a33, #b4643a) left / var(--wall) 100% no-repeat,
+    linear-gradient(135deg, #d4844f, #c06c3e);
+  box-shadow:
+    inset 0 0 0 1px rgba(59, 32, 20, 0.6),
+    inset calc(var(--s) * 0.22) calc(var(--s) * 0.22) 0 -1px rgba(40, 16, 6, 0.28);
+}
+
+.iso-stage button.cell.dusty::after {
+  content: "";
+  position: absolute;
+  left: 52%;
+  top: 56%;
+  width: 34%;
+  height: 26%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 35%, #f0d2ac, #c98a5c 75%);
+  border: 1.5px solid #5a2c16;
+  border-radius: 50%;
+  box-shadow:
+    -0.45rem 0.3rem 0 -0.3rem #e6c094,
+    0.5rem 0.35rem 0 -0.35rem #e6c094;
+}
+
+.iso-stage button.cell.dusty:hover {
+  filter: brightness(1.08);
+}
+
+.iso-stage a.cell {
+  --wall: 32%;
+  background:
+    linear-gradient(to bottom, #3e1a0b, #6b3219) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #6b3219, #7d3c1e) left / var(--wall) 100% no-repeat,
+    radial-gradient(ellipse 70% 60% at 60% 60%, #5b2c16, #3f1d0d 80%);
+  box-shadow:
+    inset 0 0 0 1px rgba(30, 12, 4, 0.8),
+    inset calc(var(--s) * 0.3) calc(var(--s) * 0.3) 0 -1px rgba(10, 4, 1, 0.35);
+}
+
+.iso-stage a.cell:hover,
+.iso-stage a.cell:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(30, 12, 4, 0.8),
+    inset 0 0 0 3px #e3ac3d;
+}
+
+/* ---------- Finds: glazed potsherds lying in the pit ----------
+   The buried page's own web styling is stripped here; it is what the
+   section page shows when you inspect the find. */
+
+[data-kind="banner"] {
+  --sherd: #f0c4ac;
+}
+
+[data-kind="nav"] {
+  --sherd: #c6d5e3;
+}
+
+[data-kind="side"] {
+  --sherd: #cfdfbe;
+}
+
+[data-kind="guest"] {
+  --sherd: #f4e9cd;
+}
+
+[data-kind="footer"] {
+  --sherd: #ddd3c1;
+}
+
+.iso-stage .iso-face,
+.tray-tag-fragment {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: #3b2014;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(160deg, var(--sherd, #efe2c4), color-mix(in srgb, var(--sherd, #efe2c4) 78%, #8a5a33));
+  border: 1.5px solid #3b2014;
+  border-radius: 42% 14% 34% 18% / 26% 38% 18% 44%;
+}
+
+.iso-stage .iso-face {
+  left: 54%;
+  top: 56%;
+  max-width: calc(var(--s) * 1.02);
+  padding: 0.22em 0.5em 0.28em;
+  font-size: clamp(0.5rem, calc(var(--s) * 0.13), 0.82rem);
+  line-height: 1.15;
+  box-shadow:
+    0 3px 0 rgba(15, 6, 2, 0.6),
+    inset 0 -2px 0 rgba(90, 50, 20, 0.25);
+}
+
+.iso-stage .iso-face *,
+.tray-tag-fragment * {
+  color: inherit !important;
+  background: none !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.iso-stage .tray-add button {
+  background: #e3ac3d;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 2px 0 rgba(15, 6, 2, 0.5);
+}
+
+/* ---------- Top of the page: room to breathe, a single tally strip ---------- */
+
+.expedition-title h1 {
+  line-height: 1.2;
+}
+
+.expedition-bar .status {
+  gap: 0;
+  padding: 0;
+  background: var(--paper-hi);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.expedition-bar .status li,
+.expedition-bar .status li:nth-child(even) {
+  padding: 0.4rem 0.85rem;
+  background: none;
+  border: 0;
+  border-right: 1px dashed rgba(21, 18, 13, 0.35);
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  font-size: 0.76rem;
+}
+
+.expedition-bar .status li:last-child {
+  border-right: 0;
+}
+
+.rename-banner {
+  background: var(--paper-hi);
+  border: 1.5px dashed var(--ink);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.rename-banner .rename-row input,
+.rename-inline input,
+.mystery-form input {
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+}
+
+.rename-row button,
+.rename-inline button,
+.mystery-form button,
+.feed-form button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.74rem;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* ---------- The field journal: one bound document beside the dig ----------
+   The question at its head, index tabs, the open page, and the dig log as
+   a ledger at the foot. No stacked cards. */
+
+.field-pane {
+  gap: 0;
+  background: var(--paper-hi);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.field-pane > .mystery {
+  transform: none;
+  padding: 0.85rem 1rem 0.9rem;
+  background: #f3e5c3;
+  border: 0;
+  border-bottom: 1.5px solid var(--ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.field-pane > .mystery::before {
+  content: none;
+}
+
+.mystery-kicker,
+.field-pane .dig-log h2 {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.field-pane > .mystery h2 {
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+
+.mystery-latest p {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+
+.field-pane .tab-bar {
+  gap: 0;
+  padding: 0 0.5rem;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.field-pane .tab-label,
+.field-pane .tab-label:hover,
+.field-pane .tab-label:active {
+  padding: 0.55rem 0.3rem 0.45rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+.field-pane #tab-tray:checked ~ .tab-bar label[for="tab-tray"],
+.field-pane #tab-notes:checked ~ .tab-bar label[for="tab-notes"],
+.field-pane #tab-theories:checked ~ .tab-bar label[for="tab-theories"] {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 -3px 0 var(--terracotta);
+}
+
+.field-pane .panel {
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The tab already names the page, so its heading is for screen readers. */
+.field-pane .tab-panel > h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.field-pane .tray-drop {
+  background: transparent;
+  border: 1.5px dashed rgba(21, 18, 13, 0.4);
+}
+
+.field-pane .tray-items {
+  gap: 0.45rem;
+}
+
+.field-pane .tray-tag {
+  padding: 0.25rem 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted rgba(21, 18, 13, 0.3);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.field-pane .tray-tag-fragment {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.field-pane .feed {
+  gap: 0.7rem;
+}
+
+.field-pane .feed-item {
+  padding: 0.05rem 0 0.05rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--olive);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.field-pane .feed-item.theory-item {
+  border-left-color: var(--terracotta);
+}
+
+.field-pane .feed-item::before {
+  content: none;
+}
+
+.field-pane .feed-item p {
+  font-size: 0.86rem;
+}
+
+.field-pane .feed-item .feed-meta {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+.field-pane .feed-item .feed-meta::before {
+  content: none;
+}
+
+.field-pane .feed-form textarea {
+  background: transparent;
+  border: 1.5px solid rgba(21, 18, 13, 0.4);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.field-pane .dig-log {
+  padding: 0.7rem 1rem;
+  background: #f3e5c3;
+  background-image: none;
+  border: 0;
+  border-top: 1.5px solid var(--ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.field-pane .dig-log li {
+  padding: 0.15rem 0;
+  border-bottom: 1px dotted rgba(21, 18, 13, 0.25);
+}
+
+.field-pane .dig-log ol {
+  gap: 0;
+}
+
+/* ---------- One-screen layout spacing ---------- */
+
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen main {
+    padding-top: 1.1rem;
+    padding-bottom: 1.1rem;
+  }
+
+  .fit-screen .expedition-bar {
+    padding: 0 0 0.85rem;
+  }
+
+  .fit-screen .excavation-layout {
+    margin-top: 0.9rem;
+  }
+
+  .fit-screen .field-pane {
+    gap: 0;
+  }
+
+  .fit-screen .mystery {
+    padding: 0.8rem 1rem 0.85rem;
+  }
+
+  .fit-screen .dig-log {
+    padding: 0.65rem 1rem;
+  }
+}
+
+/* The open field a shade lighter and drier than the plot's turf, so the
+   roped-off ground reads as its own place before anything is dug. */
+.iso-field {
+  --grass: #a2cf6c;
+}

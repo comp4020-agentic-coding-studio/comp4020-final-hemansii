@@ -1,0 +1,185 @@
+---
+// The excavation's surroundings, drawn around the interactive grid: the cut
+// edge of the plot, the rope-and-stake boundary and the expedition's kit set
+// out in deliberate spots on the grass. Purely decorative; tiles are HTML.
+//
+// Coordinates are in hundredths of a tile side (s = 100), matching .iso-stage
+// in styles.css: a 6 x 10 grid turned 45deg and squashed to K of its height,
+// with the plot's corners landing on T, R, B and L below.
+interface Props {
+  layer: "under" | "over";
+  class?: string;
+}
+const { layer, class: className } = Astro.props;
+
+type P = [number, number];
+const K = 0.58;
+const MX = 46;
+const MTOP = 60;
+const MBOTTOM = 46;
+const S2 = Math.SQRT1_2;
+const W = 1131.37 + 2 * MX;
+const H = 1131.37 * K + MTOP + MBOTTOM;
+const at = (lx: number, ly: number): P => [707.11 + MX + (lx - ly) * S2, MTOP + (lx + ly) * S2 * K];
+const T = at(0, 0);
+const R = at(600, 0);
+const B = at(600, 1000);
+const L = at(0, 1000);
+
+const pts = (ps: P[]): string => ps.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+const lerp = (a: P, b: P, t: number): P => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+// Deterministic, so the field looks the same on every render and live resyncs
+// never shuffle the grass.
+let seed = 11;
+const rand = (): number => {
+  seed = (seed * 16807) % 2147483647;
+  return (seed - 1) / 2147483646;
+};
+
+// The cut edge: a band of exposed soil just outside the plot, so the grid
+// reads as a trench outline cut into the turf.
+const EDGE = 11;
+const cut = [at(-EDGE, -EDGE), at(600 + EDGE, -EDGE), at(600 + EDGE, 1000 + EDGE), at(-EDGE, 1000 + EDGE)];
+
+function fringe(a: P, b: P, step = 8, low = 4, high = 10): string {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const n = Math.max(2, Math.round(len / step));
+  const out: P[] = [];
+  for (let i = 0; i <= n; i++) {
+    const [x, y] = lerp(a, b, i / n);
+    out.push([x, y + 2]);
+    if (i < n) {
+      const [mx, my] = lerp(a, b, (i + 0.5) / n);
+      out.push([mx + (rand() - 0.5) * 3, my - (low + rand() * (high - low))]);
+    }
+  }
+  return pts([...out, [b[0], b[1] + 4], [a[0], a[1] + 4]]);
+}
+
+// Rope corners out on the grass, a stake at each corner and midpoint.
+const ROPE = 26;
+const rope: P[] = [at(-ROPE, -ROPE), at(600 + ROPE, -ROPE), at(600 + ROPE, 1000 + ROPE), at(-ROPE, 1000 + ROPE)];
+const stakes: P[] = rope.flatMap((p, i) => [p, lerp(p, rope[(i + 1) % 4], 0.5)]);
+const sag = (a: P, b: P): string => {
+  const [mx, my] = lerp(a, b, 0.5);
+  return `M${a[0]},${a[1] - 16} Q${mx},${my - 8} ${b[0]},${b[1] - 16}`;
+};
+
+// A few tufts and flecks, only along the rope line, so the grass has some
+// life without reading as noise.
+const tufts: P[] = Array.from({ length: 22 }, (_, i) => {
+  const side = i % 4;
+  const [x, y] = lerp(rope[side], rope[(side + 1) % 4], 0.08 + rand() * 0.84);
+  return [x + (rand() - 0.5) * 30, y + 10 + rand() * 14];
+});
+
+function crate(x: number, y: number, a: number, h: number, open = false) {
+  const top: P[] = [[x, y - a * K], [x + a, y], [x, y + a * K], [x - a, y]];
+  const left: P[] = [[x - a, y], [x, y + a * K], [x, y + a * K + h], [x - a, y + h]];
+  const right: P[] = [[x, y + a * K], [x + a, y], [x + a, y + h], [x, y + a * K + h]];
+  const inner: P[] = top.map(([px, py]) => [x + (px - x) * 0.76, y + (py - y) * 0.76]);
+  return { top: pts(top), left: pts(left), right: pts(right), inner: pts(inner), open, x, y, a, h };
+}
+// The camp sits in the empty corner beside the near-right edge: stacked
+// crates, an open finds crate, and tools leaning where someone left them.
+const camp = [crate(1085, 560, 34, 30), crate(1085, 528, 26, 22), crate(1150, 616, 30, 26, true), crate(1020, 640, 24, 20, true)];
+const INK = "#2b1a0e";
+---
+
+{
+  layer === "under" ? (
+    <svg class={className} viewBox={`0 0 ${W.toFixed(1)} ${H.toFixed(1)}`} aria-hidden="true">
+      {tufts.map(([x, y]) => (
+        <path d={`M${x},${y} l-3,-7 M${x},${y} l0,-9 M${x},${y} l3,-7`} stroke="#4c8526" stroke-width="1.6" stroke-linecap="round" fill="none" />
+      ))}
+
+      {/* back rope and stakes */}
+      <path class="iso-rope" d={sag(rope[3], rope[0]) + " " + sag(rope[0], rope[1])} />
+      {[stakes[6], stakes[7], stakes[0], stakes[1], stakes[2]].map(([x, y]) => (
+        <g>
+          <rect x={x - 4} y={y - 26} width="8" height="26" rx="1.5" fill="#a87443" stroke={INK} stroke-width="2" />
+          <rect x={x - 4} y={y - 20} width="8" height="3" fill="#efe6cf" />
+        </g>
+      ))}
+
+      {/* the cut edge of the plot, with turf overhanging its far side */}
+      <polygon points={pts(cut)} fill="#8a4524" stroke={INK} stroke-width="2.5" stroke-linejoin="round" />
+      <polygon points={fringe(cut[3], cut[0])} fill="#6aa83a" stroke="#2f4d1a" stroke-width="1" stroke-linejoin="round" />
+      <polygon points={fringe(cut[0], cut[1])} fill="#5f9a33" stroke="#2f4d1a" stroke-width="1" stroke-linejoin="round" />
+
+      {/* sieve station, far left: a bucket of spoil and a sieve on its frame */}
+      <g stroke={INK} stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+        <ellipse cx="205" cy="246" rx="58" ry="18" fill="#000" opacity="0.12" stroke="none" />
+        <line x1="236" y1="214" x2="226" y2="250" />
+        <line x1="296" y1="214" x2="306" y2="246" />
+        <ellipse cx="266" cy="208" rx="40" ry="15" fill="#c08a4f" />
+        <ellipse cx="266" cy="206" rx="32" ry="10.5" fill="#e6d7b2" stroke-width="1.2" />
+        <path d="M240,206 h52 M250,199 v14 M266,196 v20 M282,199 v14" stroke-width="0.9" opacity="0.55" />
+        <path d="M150,212 l42,0 l-6,36 l-30,0 Z" fill="#8c9398" />
+        <ellipse cx="171" cy="212" rx="21" ry="7" fill="#7a3d22" />
+        <path d="M152,212 q19,-24 38,0" fill="none" stroke-width="1.6" />
+      </g>
+
+      {/* survey tripod on the far right, where the plot was laid out from */}
+      <g stroke={INK} stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="1118" cy="196" rx="34" ry="9" fill="#000" opacity="0.12" stroke="none" />
+        <line x1="1118" y1="120" x2="1090" y2="196" />
+        <line x1="1118" y1="120" x2="1146" y2="194" />
+        <line x1="1118" y1="120" x2="1122" y2="202" />
+        <rect x="1104" y="102" width="28" height="18" rx="3" fill="#e3ac3d" />
+        <circle cx="1104" cy="111" r="5" fill="#cfd3d6" />
+        <path d="M1150,182 l0,-46 l20,8 l-20,8" fill="#c23b28" stroke-width="1.8" />
+      </g>
+
+      {/* spoil heap on the near left: what's come out of the trench */}
+      <g stroke={INK} stroke-width="2" stroke-linejoin="round">
+        <ellipse cx="170" cy="700" rx="92" ry="22" fill="#000" opacity="0.12" stroke="none" />
+        <path d="M84,698 q24,-52 64,-58 q30,-22 58,4 q34,8 54,54 q-88,18 -176,0 Z" fill="#a85a33" />
+        <path d="M118,660 q22,-6 34,4 M176,652 q16,-2 26,8 M140,684 q30,-6 52,2" fill="none" stroke="#6e3519" stroke-width="1.4" />
+        <line x1="208" y1="636" x2="228" y2="612" stroke-width="6" stroke-linecap="round" />
+        <line x1="208" y1="636" x2="228" y2="612" stroke="#b07a45" stroke-width="3.4" stroke-linecap="round" />
+        <path d="M196,640 l26,8 l-6,26 l-26,-6 Z" fill="#a7b0b5" />
+      </g>
+
+      {/* camp: crates and tools */}
+      <ellipse cx="1092" cy="662" rx="120" ry="34" fill="#000" opacity="0.1" />
+      {camp.map((c) => (
+        <g stroke={INK} stroke-width="2" stroke-linejoin="round">
+          <polygon points={c.left} fill="#a8682f" />
+          <polygon points={c.right} fill="#86501f" />
+          <polygon points={c.top} fill="#d39a5b" />
+          {c.open ? (
+            <polygon points={c.inner} fill="#4f2c12" stroke-width="1.4" />
+          ) : (
+            <path d={`M${c.x - c.a / 2},${c.y - (c.a * K) / 2} L${c.x + c.a / 2},${c.y + (c.a * K) / 2}`} stroke-width="1.3" fill="none" />
+          )}
+          <path d={`M${c.x - c.a},${c.y + c.h / 2} L${c.x},${c.y + c.a * K + c.h / 2} L${c.x + c.a},${c.y + c.h / 2}`} stroke-width="1.1" fill="none" />
+        </g>
+      ))}
+      <g stroke={INK} stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1186" y1="640" x2="1168" y2="560" stroke-width="6" />
+        <line x1="1186" y1="640" x2="1168" y2="560" stroke="#b07a45" stroke-width="3.4" />
+        <path d="M1176,642 l22,-4 l4,24 l-14,10 l-12,-8 Z" fill="#a7b0b5" stroke-width="2" />
+        <line x1="960" y1="700" x2="1030" y2="676" stroke-width="6" />
+        <line x1="960" y1="700" x2="1030" y2="676" stroke="#b07a45" stroke-width="3.4" />
+        <path d="M1014,660 q22,2 34,24 q-14,-10 -28,-10 q-14,0 -26,8 q8,-18 20,-22 Z" fill="#8f979c" stroke-width="2" />
+      </g>
+    </svg>
+  ) : (
+    <svg class={className} viewBox={`0 0 ${W.toFixed(1)} ${H.toFixed(1)}`} aria-hidden="true">
+      {/* turf lip along the near edge of the cut */}
+      <polygon points={fringe([cut[3][0] - 2, cut[3][1] + 3], [cut[2][0], cut[2][1] + 3], 7, 3, 8)} fill="#6aa83a" stroke="#2f4d1a" stroke-width="1" />
+      <polygon points={fringe([cut[2][0], cut[2][1] + 3], [cut[1][0] + 2, cut[1][1] + 3], 7, 3, 8)} fill="#5f9a33" stroke="#2f4d1a" stroke-width="1" />
+
+      {/* front rope and stakes, nearer the viewer than the plot */}
+      <path class="iso-rope" d={sag(rope[1], rope[2]) + " " + sag(rope[2], rope[3])} />
+      {[stakes[3], stakes[4], stakes[5]].map(([x, y]) => (
+        <g>
+          <rect x={x - 4} y={y - 26} width="8" height="26" rx="1.5" fill="#a87443" stroke={INK} stroke-width="2" />
+          <rect x={x - 4} y={y - 20} width="8" height="3" fill="#efe6cf" />
+        </g>
+      ))}
+    </svg>
+  )
+}
