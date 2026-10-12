@@ -40,7 +40,7 @@ const MESSAGES: Record<string, string> = {
 const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 ---
 
-<Layout title="The Dig">
+<Layout title="The Dig" fit>
   <div class="expedition-bar">
     <div class="expedition-title">
       <h1>Something is buried here</h1>
@@ -361,6 +361,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
       }
       const fresh = new DOMParser().parseFromString(html, "text/html");
       const before = snapshot();
+      document.documentElement.classList.add("settled");
 
       for (const id of LIVE_IDS) {
         const next = fresh.getElementById(id);

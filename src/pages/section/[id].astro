@@ -27,7 +27,7 @@ const brushedWhen = new Date(finding.brushedAt).toLocaleString("en-AU", {
 ---
 
 <Layout title={`Section ${row + 1}·${col + 1}, The Dig`}>
-  <p><a href={`/#cell-${key}`}>← Back to the dig</a></p>
+  <p><a href={`/#cell-${key}`} data-back-to-dig>← Back to the dig</a></p>
   <article class="note-card deckle-edge">
     <Stamp>Specimen {gridRef(row, col)}</Stamp>
     <h1>Row {row + 1}, column {col + 1}</h1>
@@ -42,4 +42,17 @@ const brushedWhen = new Date(finding.brushedAt).toLocaleString("en-AU", {
     }
     <p>Part of <em>{site.title}</em>.</p>
   </article>
+  <script>
+    // Coming from the dig, going back in history returns to the exact scroll
+    // position the visitor left; following the link would instead jump the
+    // tile to the top of the window.
+    const back = document.querySelector<HTMLAnchorElement>("[data-back-to-dig]");
+    back?.addEventListener("click", (e) => {
+      const from = document.referrer ? new URL(document.referrer) : null;
+      if (from?.origin === location.origin && from.pathname === "/" && history.length > 1) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  </script>
 </Layout>

@@ -1935,3 +1935,214 @@ a.cell.live-arrived::before {
     transform: translate(-50%, 0);
   }
 }
+
+/* Once the page has loaded, regions get swapped in place on every action
+   and every live update. Their load-in animations would replay on each swap
+   and the whole board would flicker, so after the first swap only what
+   actually changed (.live-arrived, .live-new) animates. */
+.settled .grid,
+.settled .tray-tag,
+.settled button.cell.dusty:not(.live-arrived),
+.settled button.cell.dusty:not(.live-arrived)::before,
+.settled button.cell.dusty:not(.live-arrived)::after,
+.settled a.cell:not(.live-arrived),
+.settled a.cell:not(.live-arrived)::before {
+  animation: none;
+}
+
+/* A :target burst left over from a no-JS reload shouldn't fire again either. */
+.settled button.cell.dusty:target:not(.live-arrived)::before {
+  content: none;
+}
+
+/* Arriving at a #cell-R-C link (no-JS redirects, a shared link) centres the
+   tile rather than parking it under the sticky header. */
+.cell {
+  scroll-margin-block: 40vh;
+}
+
+/* ---------- One screen, no page scroll (desktop) ----------
+   The dig page lays out as a column exactly the height of the window: the
+   header and expedition bar take what they need and the excavation takes
+   the rest. The ten grid rows share whatever height is left, and the
+   board's width follows from that height so tiles stay a sensible shape.
+   Long tray/notes/theories lists scroll inside their own panel instead.
+   Phones and short windows keep the normal scrolling page. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen {
+    /* everything vertical that isn't grid rows, roughly; only used to size
+       the board's width, the height itself comes from flex */
+    --fit-chrome: 19rem;
+    --tile-ratio: 1.45;
+
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fit-screen .site-header {
+    flex: none;
+    position: static;
+  }
+
+  .fit-screen main {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 0.6rem;
+    padding-bottom: 0.9rem;
+  }
+
+  .fit-screen .expedition-bar {
+    flex: none;
+    padding: 0.2rem 0 0.55rem;
+    margin-bottom: 0;
+  }
+
+  .fit-screen .rename-banner {
+    flex: none;
+    margin: 0.45rem 0 0;
+  }
+
+  .fit-screen .excavation-layout {
+    flex: 1;
+    min-height: 0;
+    margin-top: 0.7rem;
+    gap: 1.25rem;
+    grid-template-columns: auto minmax(19rem, 28rem);
+    grid-template-rows: minmax(0, 1fr);
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .fit-screen .dig-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: min(
+      calc((100dvh - var(--fit-chrome)) * 0.6 * var(--tile-ratio) + 4.8rem),
+      calc(100vw - 19rem - 6.5rem)
+    );
+  }
+
+  .fit-screen .scene {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 2.6rem 1.1rem 2rem;
+  }
+
+  .fit-screen .grid-frame {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: 1.3rem minmax(0, 1fr);
+  }
+
+  .fit-screen .grid-rows {
+    grid-template-rows: repeat(10, minmax(0, 1fr));
+    padding: 8px 0;
+  }
+
+  .fit-screen .grid {
+    min-height: 0;
+    min-inline-size: 0;
+    grid-template-rows: repeat(10, minmax(0, 1fr));
+  }
+
+  .fit-screen .cell,
+  .fit-screen .find {
+    min-height: 0;
+  }
+
+  .fit-screen .cell {
+    overflow: hidden;
+    font-size: clamp(0.5rem, 1.6dvh, 0.82rem);
+  }
+
+  /* it would sit on top of the row-10 label once rows are this short */
+  .fit-screen .prop-crate {
+    display: none;
+  }
+
+  .fit-screen .prop-shovel,
+  .fit-screen .prop-hand-brush,
+  .fit-screen .prop-clipboard {
+    bottom: 1.9rem;
+  }
+
+  /* The dig log becomes a single ticker line under the board. */
+  .fit-screen .dig-log {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    margin-top: 0.6rem;
+    padding: 0.35rem 0.8rem;
+    background-image: none;
+    overflow: hidden;
+  }
+
+  .fit-screen .dig-log h2 {
+    flex: none;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .fit-screen .dig-log ol {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+
+  .fit-screen .field-pane {
+    position: static;
+    min-height: 0;
+    gap: 0.6rem;
+  }
+
+  .fit-screen .mystery,
+  .fit-screen .tab-bar {
+    flex: none;
+  }
+
+  .fit-screen .mystery {
+    padding: 0.8rem 0.9rem 0.8rem 1.5rem;
+  }
+
+  .fit-screen .mystery h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .fit-screen .mystery-latest p {
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .fit-screen .tab-panel {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .fit-screen #tab-tray:checked ~ #tray,
+  .fit-screen #tab-notes:checked ~ #notes,
+  .fit-screen #tab-theories:checked ~ #theories {
+    flex: 1;
+  }
+
+  .fit-screen .feed {
+    max-height: none;
+    overflow: visible;
+  }
+}
