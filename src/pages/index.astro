@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Companion from "../components/Companion.astro";
 import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
@@ -160,6 +159,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
     <aside class="field-pane">
     <section class="mystery" id="mystery" aria-labelledby="mystery-heading">
+      <img class="mystery-art" src="/props/soil-cube.webp" alt="" width="58" height="68" />
       <p class="mystery-kicker">The expedition's question</p>
       <h2 id="mystery-heading">What do you think this site was?</h2>
       <div id="mystery-latest" class="mystery-latest">
@@ -198,7 +198,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           {
             tray.length === 0 ? (
               <p class="tray-empty">
-                <Companion class="companion" />
+                <img class="empty-art" src="/props/specimen-tray.webp" alt="" width="72" height="49" />
                 Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.
               </p>
             ) : (
@@ -233,7 +233,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           {
             notes.length === 0 && (
               <li class="feed-empty">
-                <Companion class="companion" />
+                <img class="empty-art" src="/props/field-notebook.webp" alt="" width="64" height="51" />
                 No notes yet, be the first to leave one.
               </li>
             )
@@ -258,7 +258,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
           {
             theories.length === 0 && (
               <li class="feed-empty">
-                <Companion class="companion" />
+                <img class="empty-art" src="/props/flag.webp" alt="" width="34" height="52" />
                 No theories yet, what do you think this was?
               </li>
             )

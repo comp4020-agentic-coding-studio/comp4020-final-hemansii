@@ -2936,3 +2936,211 @@ a.cell.live-arrived::before {
 .iso-field {
   --grass: #a2cf6c;
 }
+
+/* =====================================================================
+   Asset-sheet style: flatter colour, moderate shading, warm brown
+   outlines at a lighter weight, soft shadows instead of hard ink offsets.
+   Props and journal art are cut from the expedition sheets (public/props).
+   ===================================================================== */
+
+:root {
+  --line-ink: #4a2f1d;
+  --soft-shadow: 0 6px 18px rgba(74, 47, 29, 0.16), 0 1px 0 rgba(74, 47, 29, 0.12);
+}
+
+.site-header {
+  border-bottom: 1.5px solid var(--line-ink);
+}
+
+.iso-field,
+.field-pane {
+  border: 2px solid var(--line-ink);
+  box-shadow: var(--soft-shadow);
+}
+
+.expedition-bar .status,
+.rename-banner {
+  border-color: var(--line-ink);
+  box-shadow: 0 2px 6px rgba(74, 47, 29, 0.12);
+}
+
+.expedition-bar {
+  border-bottom-color: rgba(74, 47, 29, 0.35);
+}
+
+.rename-row button,
+.rename-inline button,
+.mystery-form button,
+.feed-form button {
+  background: #c4502f;
+  border: 1.5px solid var(--line-ink);
+  border-radius: 7px;
+  box-shadow: 0 2px 0 rgba(74, 47, 29, 0.55);
+}
+
+.rename-row button:active,
+.rename-inline button:active,
+.mystery-form button:active,
+.feed-form button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(74, 47, 29, 0.55);
+}
+
+.field-pane > .mystery,
+.field-pane .tab-bar {
+  border-bottom-color: rgba(74, 47, 29, 0.45);
+}
+
+.field-pane .dig-log {
+  border-top-color: rgba(74, 47, 29, 0.45);
+}
+
+.iso-label,
+.dig-log-ref,
+.tray-tag-ref {
+  border-color: var(--line-ink);
+  background: #f2e6c9;
+}
+
+.iso-label {
+  border-width: 1px;
+  box-shadow: 0 1px 2px rgba(74, 47, 29, 0.25);
+}
+
+/* ---------- Board: the same flat-and-shaded treatment ---------- */
+
+.iso-stage .cell {
+  box-shadow: inset 0 0 0 0.5px rgba(61, 90, 30, 0.45);
+}
+
+.iso-stage button.cell {
+  background:
+    radial-gradient(ellipse 7% 5% at 28% 34%, #6fa83f 90%, transparent 100%),
+    radial-gradient(ellipse 6% 4% at 70% 66%, #6fa83f 90%, transparent 100%),
+    radial-gradient(circle at 64% 24%, #f1df86 0 2%, transparent 2.5%),
+    linear-gradient(135deg, #93c862, #84bb52 55%, #7ab04a);
+}
+
+/* Dug walls show the soil's layers, like the stratigraphy block: dark
+   topsoil, a pale sandy band, then the orange subsoil. */
+.iso-stage button.cell.dusty {
+  background:
+    radial-gradient(circle at 24% 62%, rgba(250, 236, 210, 0.95) 0 3%, transparent 3.6%),
+    radial-gradient(circle at 62% 34%, rgba(250, 236, 210, 0.9) 0 2.4%, transparent 3%),
+    radial-gradient(circle at 76% 78%, rgba(250, 236, 210, 0.9) 0 2.8%, transparent 3.4%),
+    radial-gradient(ellipse 60% 55% at 58% 58%, rgba(248, 230, 200, 0.5), transparent 70%),
+    linear-gradient(to bottom, #5b3a26 0 30%, #e1bd8c 30% 58%, #c47a4c 58% 100%) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #6a4430 0 30%, #ecc999 30% 58%, #d0875a 58% 100%) left / var(--wall) 100% no-repeat,
+    linear-gradient(135deg, #d98d58, #c77442);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(74, 47, 29, 0.55),
+    inset calc(var(--s) * 0.22) calc(var(--s) * 0.22) 0 -1px rgba(74, 40, 20, 0.18);
+}
+
+.iso-stage button.cell.dusty::after {
+  background: radial-gradient(circle at 40% 35%, #f0d2ac, #d29a6a 75%);
+  border: 1px solid #7a4a2c;
+}
+
+.iso-stage a.cell {
+  background:
+    linear-gradient(to bottom, #5b3a26 0 22%, #e1bd8c 22% 40%, #d39066 40% 62%, #b45e36 62% 82%, #6b3a22 82%) top / 100% var(--wall) no-repeat,
+    linear-gradient(to right, #6a4430 0 22%, #ecc999 22% 40%, #dc9a70 40% 62%, #c06a40 62% 82%, #7a4428 82%) left / var(--wall) 100% no-repeat,
+    radial-gradient(ellipse 70% 60% at 60% 60%, #6b3a22, #4f2a17 80%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(40, 20, 8, 0.7),
+    inset calc(var(--s) * 0.3) calc(var(--s) * 0.3) 0 -1px rgba(30, 14, 4, 0.25);
+}
+
+.iso-stage .iso-face,
+.tray-tag-fragment {
+  border: 1px solid var(--line-ink);
+}
+
+.iso-stage .iso-face {
+  box-shadow: 0 3px 4px rgba(30, 14, 4, 0.45);
+}
+
+.iso-stage .tray-add button {
+  border: 1px solid var(--line-ink);
+  box-shadow: 0 1px 2px rgba(30, 14, 4, 0.4);
+}
+
+/* Cursors cut from the hand-tool sheet: the shovel digs, the brush cleans. */
+.iso-stage button.cell:not(:disabled) {
+  cursor: url("/props/cursor-shovel.png") 3 29, pointer;
+}
+
+.iso-stage button.cell.dusty {
+  cursor: url("/props/cursor-brush.png") 3 28, pointer;
+}
+
+/* ---------- Journal art ---------- */
+
+.field-pane > .mystery {
+  position: relative;
+  padding-right: 4.6rem;
+}
+
+.mystery-art {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  width: 3.4rem;
+  height: auto;
+  filter: drop-shadow(0 3px 3px rgba(74, 47, 29, 0.2));
+}
+
+.mystery-form {
+  margin-right: -3.6rem;
+}
+
+.empty-art {
+  display: block;
+  height: auto;
+  filter: drop-shadow(0 2px 2px rgba(74, 47, 29, 0.18));
+}
+
+.tray-empty .empty-art {
+  float: left;
+  width: 4.2rem;
+  margin: 0 0.75rem 0 0;
+}
+
+.feed-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.feed-empty .empty-art {
+  flex: none;
+  width: 3.6rem;
+}
+
+.feed-empty .empty-art[src$="flag.webp"] {
+  width: 2rem;
+}
+
+.field-pane > .mystery {
+  padding-right: 3.9rem;
+}
+
+.mystery-art {
+  width: 2.9rem;
+}
+
+.mystery-form {
+  margin-right: -2.9rem;
+}
+
+/* The log scrolls inside the journal; fade its foot so a part-shown line
+   reads as "more below" rather than clipped. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen .field-pane .dig-log {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 1.6rem), transparent);
+  }
+}
