@@ -1,45 +1,159 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Companion from "../components/Companion.astro";
-import Stamp from "../components/Stamp.astro";
 import { openSite } from "../lib/dig";
-import { trayFor } from "../lib/specimens";
+import { KIND_LABELS, NOTE_MAX, trayFor } from "../lib/specimens";
+import { MAX_EVIDENCE, listTheories } from "../lib/theories";
 import { gridRef } from "../sites";
 import { getOrCreateVisitor } from "../lib/visitor";
 
 const { visitor } = getOrCreateVisitor(Astro.cookies);
 const { id: siteId } = openSite();
 const tray = trayFor(visitor.id, siteId);
+const theories = listTheories(siteId, 8);
+
+const MESSAGES: Record<string, string> = {
+  "specimen-noted": "Note saved to the specimen.",
+  "theory-ok": "Theory posted, with your evidence.",
+  unarchived: "Removed from your specimen tray.",
+  "archive-bad-cell": "That find isn't in your tray.",
+};
+const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 ---
 
-<Layout title="Your archive, The Dig">
-  <div class="dossier deckle-edge">
-    <Stamp>Cabinet of curiosities</Stamp>
-    <h1>Your specimen tray</h1>
-    <p>Finds you've collected from the current dig, {visitor.name}.</p>
-  </div>
+<Layout title="Evidence table, The Dig">
+  <header class="evidence-head">
+    <img class="evidence-emblem" src="/props/relic-emblem.webp" alt="" width="75" height="80" />
+    <div>
+      <p class="evidence-kicker">Specimen cabinet</p>
+      <h1>Your evidence table</h1>
+      <p>
+        Every find you've saved from the dig, {visitor.name}. Lay them side by side, jot down what each one tells you,
+        then put your theory to the expedition with the pieces that back it up.
+      </p>
+    </div>
+    <a href="/" class="evidence-back">← Back to the dig</a>
+  </header>
+
+  {flash && <p class="flash" role="status" id="flash">{flash}</p>}
 
   {
     tray.length === 0 ? (
-      <p class="tray-empty">
-        <Companion class="companion" />
-        Nothing in your tray yet, drag a recovered find here from the excavation, or use its{" "}
-        <strong>+</strong> button.
-      </p>
+      <div class="evidence-empty">
+        <img src="/props/specimen-tray.webp" alt="" width="150" height="102" />
+        <p>
+          Your tray is empty. Dig and brush a section on the excavation, then drag the find into your tray (or use
+          its <strong>+</strong>) to lay it out here.
+        </p>
+      </div>
     ) : (
-      <ul class="specimen-grid">
-        {tray.map(({ row, col, cell }) => (
-          <li class="specimen-card">
-            <span class="specimen-ref">{gridRef(row, col)}</span>
-            <a class={`fragment kind-${cell.kind}`} href={`/section/${row}-${col}`} set:html={cell.html} />
-            <form method="post" action="/api/archive">
-              <input type="hidden" name="cell" value={`${row}-${col}`} />
-              <input type="hidden" name="action" value="remove" />
-              <button type="submit">Remove</button>
+      <div class="evidence-layout">
+        <ul class="specimen-table" aria-label="Saved specimens">
+          {tray.map((s) => {
+            const key = `${s.row}-${s.col}`;
+            return (
+              <li class="specimen" id={`specimen-${key}`} data-kind={s.cell.kind}>
+                <div class="specimen-top">
+                  <span class="specimen-tag">{gridRef(s.row, s.col)}</span>
+                  <span class="specimen-kind">{KIND_LABELS[s.cell.kind] ?? s.cell.kind}</span>
+                </div>
+                <a href={`/section/${key}`} class="specimen-sherd" data-kind={s.cell.kind} set:html={s.cell.html} />
+                <dl class="specimen-facts">
+                  <div>
+                    <dt>Uncovered by</dt>
+                    <dd>{s.finder}</dd>
+                  </div>
+                  {s.brusher && (
+                    <div>
+                      <dt>Brushed by</dt>
+                      <dd>{s.brusher}</dd>
+                    </div>
+                  )}
+                </dl>
+                <p class="specimen-reads">
+                  <span>Field note</span> {s.cell.note}
+                </p>
+                <form method="post" action="/api/specimen-note" class="specimen-note">
+                  <input type="hidden" name="cell" value={key} />
+                  <label for={`note-${key}`}>Your note</label>
+                  <textarea id={`note-${key}`} name="note" maxlength={NOTE_MAX} rows="2" placeholder="What does this tell you?">{s.note}</textarea>
+                  <button type="submit">Save note</button>
+                </form>
+                <form method="post" action="/api/archive" class="specimen-remove">
+                  <input type="hidden" name="cell" value={key} />
+                  <input type="hidden" name="action" value="remove" />
+                  <button type="submit" aria-label={`Remove ${gridRef(s.row, s.col)} from your tray`}>Return to the dig</button>
+                </form>
+              </li>
+            );
+          })}
+        </ul>
+
+        <aside class="evidence-side">
+          <section class="evidence-theory" id="theories" aria-labelledby="theory-heading">
+            <p class="evidence-kicker">The expedition's question</p>
+            <h2 id="theory-heading">What was this site?</h2>
+            <form method="post" action="/api/theories" class="theory-form">
+              <input type="hidden" name="from" value="archive" />
+              <label for="theory-body" class="visually-hidden">Your theory</label>
+              <textarea id="theory-body" name="body" maxlength="300" rows="3" placeholder="I think it was someone's…" required />
+              <fieldset class="evidence-pick" data-max={MAX_EVIDENCE}>
+                <legend>Back it up with up to {MAX_EVIDENCE} finds <span>(optional)</span></legend>
+                {tray.map((s) => (
+                  <label class="evidence-chip">
+                    <input type="checkbox" name="evidence" value={`${s.row}-${s.col}`} />
+                    <span class="specimen-tag">{gridRef(s.row, s.col)}</span>
+                    <span class="evidence-chip-text" set:html={s.cell.html} />
+                  </label>
+                ))}
+              </fieldset>
+              <button type="submit">Log my theory</button>
             </form>
-          </li>
-        ))}
-      </ul>
+          </section>
+
+          {
+            theories.length > 0 && (
+              <section class="evidence-recent" aria-labelledby="recent-heading">
+                <h2 id="recent-heading">Recent theories</h2>
+                <ul>
+                  {theories.map((t) => (
+                    <li>
+                      <p>{t.body}</p>
+                      {t.evidence.length > 0 && (
+                        <p class="theory-evidence">
+                          <span>Evidence</span>
+                          {t.evidence.map((e) => (
+                            <a href={`/section/${e.row}-${e.col}`} class="specimen-tag" title={e.cell.html.replace(/<[^>]+>/g, "")}>
+                              {gridRef(e.row, e.col)}
+                            </a>
+                          ))}
+                        </p>
+                      )}
+                      <p class="feed-meta">
+                        <strong>{t.author}</strong>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          }
+        </aside>
+      </div>
     )
   }
+
+  <script>
+    // Cap the evidence picks: once the limit is reached, the rest disable.
+    document.querySelectorAll<HTMLFieldSetElement>(".evidence-pick").forEach((set) => {
+      const max = Number(set.dataset.max ?? 3);
+      const boxes = [...set.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];
+      const update = (): void => {
+        const full = boxes.filter((b) => b.checked).length >= max;
+        boxes.forEach((b) => (b.disabled = full && !b.checked));
+      };
+      set.addEventListener("change", update);
+    });
+    const flash = document.getElementById("flash");
+    if (flash) setTimeout(() => (flash.hidden = true), 3500);
+  </script>
 </Layout>

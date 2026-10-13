@@ -2608,6 +2608,10 @@ a.cell.live-arrived::before {
   --sherd: #ddd3c1;
 }
 
+[data-kind="body"] {
+  --sherd: #f1e2c2;
+}
+
 .iso-stage .iso-face,
 .tray-tag-fragment {
   font-family: var(--font-body);
@@ -3270,4 +3274,598 @@ a.cell.live-arrived::before {
   box-shadow:
     inset 0 0 0 0.5px rgba(74, 40, 18, 0.35),
     inset 0 0 0 2.5px var(--gold);
+}
+
+/* =====================================================================
+   Evidence: the tray as a collection of finds, and the theories that
+   cite them. Shared pieces first (grid tags, sherds), then the side
+   panel's compact tray, then the full evidence table (/archive).
+   ===================================================================== */
+
+.specimen-tag {
+  display: inline-block;
+  padding: 0 0.32rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  color: var(--ink);
+  text-decoration: none;
+  background: #f2e6c9;
+  border: 1.2px solid var(--line-ink);
+  border-radius: 2px;
+}
+
+a.specimen-tag:hover {
+  background: var(--gold);
+}
+
+/* ---------- Side panel: a tray entry is a find, not just a label ---------- */
+
+.field-pane .tray-tag {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+.tray-tag-body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.field-pane .tray-tag-fragment {
+  justify-self: start;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.tray-tag-meta,
+.tray-tag-note {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.tray-tag-meta {
+  font-family: var(--font-ui);
+  color: var(--ink-soft);
+}
+
+.tray-tag-note {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--line-ink);
+}
+
+.tray-tag-note::before {
+  content: "✎ ";
+  font-style: normal;
+}
+
+/* ---------- Picking evidence for a theory ---------- */
+
+.evidence-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.evidence-pick legend {
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.evidence-pick legend span,
+.evidence-none {
+  font-weight: 400;
+  color: color-mix(in srgb, var(--ink-soft) 75%, transparent);
+}
+
+.evidence-none {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+}
+
+.evidence-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.evidence-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.evidence-chip .specimen-tag {
+  padding: 0.05rem 0.4rem;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.evidence-chip input:checked + .specimen-tag {
+  color: #fff8ea;
+  background: var(--terracotta);
+  border-color: var(--terracotta-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 0 rgba(74, 47, 29, 0.35);
+}
+
+.evidence-chip input:focus-visible + .specimen-tag {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.evidence-chip input:disabled + .specimen-tag {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.theory-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.theory-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.2rem 0 0;
+}
+
+.theory-evidence > span {
+  margin-right: 0.15rem;
+  font-family: var(--font-ui);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+/* ---------- The evidence table (/archive) ---------- */
+
+.evidence-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.4rem;
+  border-bottom: 1.5px dashed rgba(74, 47, 29, 0.35);
+}
+
+.evidence-emblem {
+  width: 4.2rem;
+  height: auto;
+  filter: drop-shadow(2px 3px 2px rgba(74, 47, 29, 0.22));
+}
+
+.evidence-kicker {
+  margin: 0 0 0.15rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.evidence-head h1 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  line-height: 1.15;
+}
+
+.evidence-head p:not(.evidence-kicker) {
+  max-width: 44rem;
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+}
+
+.evidence-back {
+  align-self: start;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--line-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.evidence-back:hover {
+  color: var(--terracotta);
+}
+
+.evidence-empty {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  max-width: 40rem;
+  padding: 1.5rem;
+  background: #f6ecd3;
+  border: 1.5px dashed rgba(74, 47, 29, 0.4);
+  border-radius: 10px;
+}
+
+.evidence-empty img {
+  flex: none;
+  width: 8rem;
+  height: auto;
+  filter: drop-shadow(2px 3px 2px rgba(74, 47, 29, 0.18));
+}
+
+.evidence-empty p {
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+.evidence-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(18rem, 26vw, 24rem);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+/* The table itself: a linen-covered board the finds are laid out on. */
+.specimen-table {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 1.1rem;
+  margin: 0;
+  padding: 1.1rem;
+  list-style: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(74, 47, 29, 0.04) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(74, 47, 29, 0.035) 0 1px, transparent 1px 4px),
+    #eadcb8;
+  border: 2px solid var(--line-ink);
+  border-radius: 12px;
+  box-shadow: var(--soft-shadow), inset 0 0 0 5px #f1e5c6, inset 0 0 0 6px rgba(74, 47, 29, 0.25);
+}
+
+/* Each find on its own specimen card, pinned with a tag. */
+.specimen {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 0.85rem 0.9rem 0.8rem;
+  background: var(--paper-hi);
+  border: 1.5px solid var(--line-ink);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 rgba(74, 47, 29, 0.18), 0 8px 16px rgba(74, 47, 29, 0.1);
+  scroll-margin-top: 1.5rem;
+}
+
+.specimen:target {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.specimen-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.specimen-top .specimen-tag {
+  font-size: 0.78rem;
+}
+
+.specimen-kind {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--olive-dark);
+}
+
+/* The find itself, at a size that can be read and compared: the same
+   glazed potsherd as on the board, laid in a little bed of soil. */
+.specimen-sherd {
+  display: grid;
+  place-items: center;
+  min-height: 6.5rem;
+  padding: 1rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  color: #3b2014;
+  background:
+    url("/terrain/floor.webp") center / 7rem auto,
+    #b06a3e;
+  border: 1.5px solid var(--line-ink);
+  border-radius: 6px;
+  box-shadow: inset 0 3px 8px rgba(42, 18, 6, 0.4);
+}
+
+.specimen-sherd > * {
+  display: inline;
+}
+
+/* the fragment rides on a glazed sherd, the same as on the board */
+.specimen-sherd {
+  position: relative;
+  isolation: isolate;
+  color: #3b2014;
+}
+
+.specimen-sherd::after {
+  content: "";
+  position: absolute;
+  inset: 22% 10%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(160deg, var(--sherd), color-mix(in srgb, var(--sherd) 78%, #8a5a33));
+  border: 1.5px solid var(--line-ink);
+  border-radius: 42% 14% 34% 18% / 26% 38% 18% 44%;
+  box-shadow: 0 4px 6px rgba(30, 14, 4, 0.4);
+  transition: transform 160ms ease;
+}
+
+.specimen-sherd:hover::after,
+.specimen-sherd:focus-visible::after {
+  transform: rotate(-2deg) scale(1.04);
+}
+
+.specimen-sherd * {
+  color: inherit !important;
+  background: none !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.specimen-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+  margin: 0;
+}
+
+.specimen-facts dt {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.specimen-facts dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.specimen-reads {
+  margin: 0;
+  padding-top: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  border-top: 1px dotted rgba(74, 47, 29, 0.35);
+}
+
+.specimen-reads > span {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.specimen-reads q * {
+  color: inherit !important;
+  background: none !important;
+  font: inherit !important;
+}
+
+.specimen-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.3rem 0.4rem;
+  align-items: end;
+}
+
+.specimen-note label {
+  grid-column: 1 / -1;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.specimen-note textarea,
+.evidence-theory textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--ink);
+  resize: vertical;
+  background:
+    repeating-linear-gradient(transparent 0 1.32rem, rgba(63, 143, 184, 0.18) 1.32rem calc(1.32rem + 1px)),
+    #fffaf0;
+  border: 1.2px solid rgba(74, 47, 29, 0.45);
+  border-radius: 4px;
+}
+
+.specimen-note button,
+.evidence-theory button[type="submit"] {
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #fff8ea;
+  cursor: pointer;
+  background: #c4502f;
+  border: 1.5px solid var(--line-ink);
+  border-radius: 7px;
+  box-shadow: 0 2px 0 rgba(74, 47, 29, 0.55);
+}
+
+.specimen-note button {
+  background: var(--green);
+}
+
+.specimen-note button:active,
+.evidence-theory button[type="submit"]:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(74, 47, 29, 0.55);
+}
+
+.specimen-remove {
+  margin: 0;
+}
+
+.specimen-remove button {
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.specimen-remove button:hover {
+  color: var(--terracotta);
+}
+
+/* The side of the table: the open question and what others have said. */
+.evidence-side {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.evidence-theory,
+.evidence-recent {
+  padding: 1rem 1.1rem;
+  background: var(--paper-hi);
+  border: 2px solid var(--line-ink);
+  border-radius: 10px;
+  box-shadow: var(--soft-shadow);
+}
+
+.evidence-theory h2,
+.evidence-recent h2 {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.evidence-theory .evidence-chip {
+  width: 100%;
+  padding: 0.25rem 0.35rem;
+  border-radius: 5px;
+}
+
+.evidence-theory .evidence-chip:hover {
+  background: rgba(227, 172, 61, 0.15);
+}
+
+.evidence-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidence-chip-text * {
+  color: inherit !important;
+  background: none !important;
+  font: inherit !important;
+}
+
+.evidence-theory button[type="submit"] {
+  justify-self: start;
+}
+
+.evidence-recent ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-recent li {
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--terracotta);
+}
+
+.evidence-recent li p {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+}
+
+.evidence-recent .feed-meta {
+  margin-top: 0.15rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 52rem) {
+  .evidence-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence-side {
+    position: static;
+  }
+
+  .evidence-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .evidence-back {
+    grid-column: 1 / -1;
+  }
 }

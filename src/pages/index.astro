@@ -4,8 +4,8 @@ import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
 import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
-import { listTheories } from "../lib/theories";
-import { trayFor } from "../lib/specimens";
+import { MAX_EVIDENCE, listTheories } from "../lib/theories";
+import { KIND_LABELS, trayFor } from "../lib/specimens";
 import { getOrCreateVisitor } from "../lib/visitor";
 import { recentActivity } from "../lib/activity";
 
@@ -230,10 +230,14 @@ const edges = (row: number, col: number): string | undefined => {
               </p>
             ) : (
               <ul class="tray-items">
-                {tray.map(({ row, col, cell }) => (
+                {tray.map(({ row, col, cell, finder, note }) => (
                   <li class="tray-tag">
                     <span class="tray-tag-ref">{gridRef(row, col)}</span>
-                    <a href={`/section/${row}-${col}`} class="tray-tag-fragment" data-kind={cell.kind} set:html={cell.html} />
+                    <div class="tray-tag-body">
+                      <a href={`/section/${row}-${col}`} class="tray-tag-fragment" data-kind={cell.kind} set:html={cell.html} />
+                      <p class="tray-tag-meta">{KIND_LABELS[cell.kind] ?? cell.kind} · found by {finder}</p>
+                      {note && <p class="tray-tag-note">{note}</p>}
+                    </div>
                     <form method="post" action="/api/archive">
                       <input type="hidden" name="cell" value={`${row}-${col}`} />
                       <input type="hidden" name="action" value="remove" />
@@ -246,7 +250,7 @@ const edges = (row: number, col: number): string | undefined => {
           }
         </div>
         </div>
-        {tray.length > 0 && <a href="/archive" class="panel-link">Open full archive →</a>}
+        {tray.length > 0 && <a href="/archive" class="panel-link">Lay them out on the evidence table →</a>}
       </section>
 
       <section class="panel tab-panel" id="notes" aria-labelledby="notes-heading">
@@ -276,9 +280,19 @@ const edges = (row: number, col: number): string | undefined => {
 
       <section class="panel tab-panel" id="theories" aria-labelledby="theories-heading">
         <h2 id="theories-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg> Theories</h2>
-        <form method="post" action="/api/theories" class="feed-form">
+        <form method="post" action="/api/theories" class="feed-form theory-form">
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
           <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this site was…" required></textarea>
+          <fieldset class="evidence-pick" id="evidence-pick" data-max={MAX_EVIDENCE}>
+            <legend>Evidence from your tray <span>(up to {MAX_EVIDENCE}, optional)</span></legend>
+            {tray.length === 0 && <p class="evidence-none">Save finds to your tray to cite them here.</p>}
+            {tray.map(({ row, col, cell }) => (
+              <label class="evidence-chip" title={cell.html.replace(/<[^>]+>/g, "")}>
+                <input type="checkbox" name="evidence" value={`${row}-${col}`} />
+                <span class="specimen-tag">{gridRef(row, col)}</span>
+              </label>
+            ))}
+          </fieldset>
           <button type="submit">Post theory</button>
         </form>
         <ul class="feed" id="theories-list">
@@ -293,6 +307,16 @@ const edges = (row: number, col: number): string | undefined => {
           {theories.map((t) => (
             <li class="feed-item theory-item" data-id={t.id}>
               <p>{t.body}</p>
+              {t.evidence.length > 0 && (
+                <p class="theory-evidence">
+                  <span>Evidence</span>
+                  {t.evidence.map((e) => (
+                    <a href={`/section/${e.row}-${e.col}`} class="specimen-tag" title={e.cell.html.replace(/<[^>]+>/g, "")}>
+                      {gridRef(e.row, e.col)}
+                    </a>
+                  ))}
+                </p>
+              )}
               <p class="feed-meta"><strong>{t.author}</strong></p>
             </li>
           ))}
@@ -335,6 +359,7 @@ const edges = (row: number, col: number): string | undefined => {
       "mystery-latest",
       "tray-contents",
       "tray-count",
+      "evidence-pick",
     ];
 
     // What each region looked like before a resync, so whatever just changed
@@ -433,9 +458,21 @@ const edges = (row: number, col: number): string | undefined => {
       const action = submitter?.getAttribute("formaction") ?? form.getAttribute("action") ?? "";
       if (!IN_PLACE.has(action)) return;
       e.preventDefault();
-      const body = new URLSearchParams(new FormData(form, submitter) as unknown as Record<string, string>);
+      // entries, not an object, so repeated fields (several evidence picks)
+      // all survive
+      const body = new URLSearchParams([...new FormData(form, submitter)].map(([k, v]) => [k, String(v)]));
       if (form.querySelector("[name=body]")) form.reset();
       void act(action, body);
+    });
+
+    // Cap the evidence picks: once the limit is reached, the rest disable.
+    document.addEventListener("change", (e) => {
+      const set = (e.target as HTMLElement).closest<HTMLFieldSetElement>(".evidence-pick");
+      if (!set) return;
+      const max = Number(set.dataset.max ?? 3);
+      const boxes = [...set.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];
+      const full = boxes.filter((b) => b.checked).length >= max;
+      boxes.forEach((b) => (b.disabled = full && !b.checked));
     });
 
     const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
