@@ -3247,7 +3247,10 @@ a.cell.live-arrived::before {
 .iso-stage button.cell.dusty {
   background:
     var(--edges),
-    url("/terrain/decal-dust-a.webp") 60% 62% / 62% auto no-repeat,
+    radial-gradient(circle at 30% 70%, #e8c99c 0 3.5%, transparent 4.2%),
+    radial-gradient(circle at 72% 36%, #e8c99c 0 3%, transparent 3.6%),
+    radial-gradient(circle at 80% 76%, #dcb688 0 2.6%, transparent 3.2%),
+    radial-gradient(ellipse 34% 26% at 56% 58%, rgba(236, 206, 160, 0.55), transparent 100%),
     var(--floor);
 }
 

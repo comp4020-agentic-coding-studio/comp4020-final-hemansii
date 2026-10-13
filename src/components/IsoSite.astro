@@ -177,15 +177,37 @@ for (let tries = 0, n = 0; n < 9 && tries < 2000; tries++) {
   const s = pick(STONES);
   scatter.push(decal(s.src, s.w, s.h, p, 1));
 }
-// Placed by hand: worn ground by the spoil heap and the camp, a sherd
-// tossed on the heap's edge, and a lone survey peg out by the tripod.
+// Placed by hand: a sherd tossed on the heap's edge, and a lone survey peg
+// out by the tripod.
 const placed: Decal[] = [
-  decal("dust-b", 95, 72, [266, 706], 0.9),
-  decal("dust-a", 96, 80, [990, 640], 0.85),
   decal("sherd", 79, 60, [262, 672], 0.42),
   decal("stake", 56, 69, [992, 140], 0.5),
 ];
-const ground = [...placed.filter((d) => d.src.startsWith("dust")), ...[...scatter, ...placed.filter((d) => !d.src.startsWith("dust"))].sort((a, b) => a.y + a.h - (b.y + b.h))];
+const ground = [...scatter, ...placed].sort((a, b) => a.y + a.h - (b.y + b.h));
+
+// Worn ground where people work: a patch of bare, sandy earth trodden
+// through the turf by the spoil heap and by the camp, drawn as a lumpy
+// closed curve flattened to the ground plane.
+function wornPatch([cx, cy]: P, rx: number, ry: number): { d: string; pebbles: { x: number; y: number; r: number }[] } {
+  const n = 9;
+  const ring: P[] = Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    const k = 0.78 + rand() * 0.3;
+    return [cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k];
+  });
+  // a smooth closed curve through the midpoints, using each ring point as
+  // the control point
+  const mid = (a: P, b: P): P => lerp(a, b, 0.5);
+  let d = `M${xy(mid(ring[n - 1], ring[0]))}`;
+  for (let i = 0; i < n; i++) d += ` Q${xy(ring[i])} ${xy(mid(ring[i], ring[(i + 1) % n]))}`;
+  const pebbles = Array.from({ length: 5 }, () => {
+    const a = rand() * Math.PI * 2;
+    const k = rand() * 0.6;
+    return { x: cx + Math.cos(a) * rx * k, y: cy + Math.sin(a) * ry * k, r: 1.6 + rand() * 1.8 };
+  });
+  return { d: d + " Z", pebbles };
+}
+const worn = [wornPatch([262, 712], 46, 17), wornPatch([1000, 652], 40, 14)];
 
 // A few small tufts on the plot's own turf; they show through the clear
 // turf tiles and are covered as soon as a section is dug.
@@ -272,6 +294,16 @@ const NOTCH_W = (203 * (DROP - DB)) / 40;
         <filter id="iso-patch" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="22" />
         </filter>
+        {/* bare earth with a ragged, softened edge: the shape is eroded by
+            noise so grass seems to grow back over its border */}
+        <filter id="iso-worn" x="-30%" y="-60%" width="160%" height="220%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.18" numOctaves="2" seed="4" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="9" xChannelSelector="R" yChannelSelector="G" result="ragged" />
+          <feGaussianBlur in="ragged" stdDeviation="1.4" />
+        </filter>
+        <filter id="iso-worn-outer" x="-40%" y="-80%" width="180%" height="260%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
         <filter id="iso-cast" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
           <feColorMatrix type="matrix" values="0 0 0 0 0.17  0 0 0 0 0.25  0 0 0 0 0.08  0 0 0 0.24 0" />
           <feGaussianBlur stdDeviation="1.8" />
@@ -289,6 +321,17 @@ const NOTCH_W = (203 * (DROP - DB)) / 40;
         ))}
       </g>
       <rect x="-200" y="-200" width={W + 400} height={H + 400} fill="url(#iso-sun)" />
+      {/* worn ground: thinned turf fading into a patch of bare earth, with
+          no hard edge, so it reads as trodden rather than stuck on */}
+      {worn.map((w) => (
+        <g>
+          <path d={w.d} fill="#a3b55a" opacity="0.55" filter="url(#iso-worn-outer)" />
+          <path d={w.d} fill="#c3a46c" opacity="0.75" filter="url(#iso-worn)" />
+          {w.pebbles.map((p) => (
+            <ellipse cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} rx={p.r.toFixed(1)} ry={(p.r * 0.7).toFixed(1)} fill="#b39467" stroke="#7a5d3a" stroke-width="0.5" opacity="0.9" />
+          ))}
+        </g>
+      ))}
       {ground.map((d) => (
         <image href={`/terrain/decal-${d.src}.webp`} x={d.x.toFixed(1)} y={d.y.toFixed(1)} width={d.w.toFixed(1)} height={d.h.toFixed(1)} />
       ))}
