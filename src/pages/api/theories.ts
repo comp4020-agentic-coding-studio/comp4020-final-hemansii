@@ -7,7 +7,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const { visitor } = getOrCreateVisitor(cookies);
   const form = await request.formData();
   const { id: siteId } = openSite();
-  postTheory(visitor.id, siteId, String(form.get("body") ?? ""));
-  const anchor = form.get("from") === "mystery" ? "mystery" : "theories";
+  const evidence = form.getAll("evidence").map(String);
+  postTheory(visitor.id, siteId, String(form.get("body") ?? ""), evidence);
+  const from = String(form.get("from") ?? "");
+  if (from === "archive") return redirect("/archive?r=theory-ok#theories", 303);
+  const anchor = from === "mystery" ? "mystery" : "theories";
   return redirect(`/?r=theory-ok#${anchor}`, 303);
 };

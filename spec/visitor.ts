@@ -35,11 +35,24 @@ export class TestVisitor {
     return this.post("/api/notes", { body });
   }
 
-  async theory(body: string): Promise<string | null> {
-    return this.post("/api/theories", { body });
+  // `evidence` is the "row-col" keys of finds to cite from this visitor's tray.
+  async theory(body: string, evidence: string[] = []): Promise<string | null> {
+    return this.post("/api/theories", { body, evidence });
   }
 
-  private async post(path: string, body: Record<string, string>): Promise<string | null> {
+  async collect(cell: string): Promise<string | null> {
+    return this.post("/api/archive", { cell, action: "add" });
+  }
+
+  async noteSpecimen(cell: string, note: string): Promise<string | null> {
+    return this.post("/api/specimen-note", { cell, note });
+  }
+
+  private async post(path: string, body: Record<string, string | string[]>): Promise<string | null> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(body)) {
+      for (const v of Array.isArray(value) ? value : [value]) params.append(key, v);
+    }
     const res = await fetch(new URL(path, this.baseUrl), {
       method: "POST",
       redirect: "manual",
@@ -48,7 +61,7 @@ export class TestVisitor {
         "content-type": "application/x-www-form-urlencoded",
         ...(this.cookie ? { cookie: this.cookie } : {}),
       },
-      body: new URLSearchParams(body),
+      body: params,
     });
     this.keep(res);
     const location = res.headers.get("location");

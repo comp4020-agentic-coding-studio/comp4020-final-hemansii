@@ -92,7 +92,9 @@ export const theories = sqliteTable(
   (t) => [index("theories_site").on(t.siteId)],
 );
 
-// A visitor's personal collection of recovered sections.
+// A visitor's personal collection of recovered sections, each with an
+// optional note of their own (what they make of it, what it goes with).
+// Private: only ever read back for the visitor who saved it.
 export const specimens = sqliteTable(
   "specimens",
   {
@@ -105,6 +107,7 @@ export const specimens = sqliteTable(
       .references(() => sites.id),
     row: int().notNull(),
     col: int().notNull(),
+    note: text(),
     addedAt: text("added_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -113,6 +116,21 @@ export const specimens = sqliteTable(
     index("specimens_visitor_site").on(t.visitorId, t.siteId),
     uniqueIndex("specimens_unique").on(t.visitorId, t.siteId, t.row, t.col),
   ],
+);
+
+// The sections a theory cites as evidence, picked from its author's tray
+// when it was posted. Keyed by cell rather than by specimen row, so the
+// citation stands even if the author later takes the find out of their tray.
+export const theoryEvidence = sqliteTable(
+  "theory_evidence",
+  {
+    theoryId: int("theory_id")
+      .notNull()
+      .references(() => theories.id),
+    row: int().notNull(),
+    col: int().notNull(),
+  },
+  (t) => [uniqueIndex("theory_evidence_unique").on(t.theoryId, t.row, t.col)],
 );
 
 export type Visitor = typeof visitors.$inferSelect;
