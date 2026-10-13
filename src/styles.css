@@ -118,13 +118,6 @@ a {
   color: var(--paper-hi);
 }
 
-.wordmark .mascot {
-  width: 2.3rem;
-  height: 2.3rem;
-  flex: none;
-  filter: drop-shadow(2px 2px 0 var(--blue-dark));
-}
-
 .site-header nav {
   display: flex;
   gap: 1.5rem;
@@ -1825,12 +1818,6 @@ a.cell.live-arrived::before {
   color: var(--ink);
 }
 
-.wordmark .mascot {
-  width: 1.7rem;
-  height: 1.7rem;
-  filter: none;
-}
-
 .site-header nav {
   gap: 1.25rem;
   font-size: 0.72rem;
@@ -3066,13 +3053,15 @@ a.cell.live-arrived::before {
   box-shadow: 0 1px 2px rgba(30, 14, 4, 0.4);
 }
 
-/* Cursors cut from the hand-tool sheet: the shovel digs, the brush cleans. */
+/* Cursors cut from the hand-tool sheet: the shovel digs, the brush cleans.
+   56px so the tool reads at a glance; the hotspot is the blade tip and the
+   bristle tip. */
 .iso-stage button.cell:not(:disabled) {
-  cursor: url("/props/cursor-shovel.png") 3 29, pointer;
+  cursor: url("/props/cursor-shovel.png") 2 51, pointer;
 }
 
 .iso-stage button.cell.dusty {
-  cursor: url("/props/cursor-brush.png") 3 28, pointer;
+  cursor: url("/props/cursor-brush.png") 6 48, pointer;
 }
 
 /* ---------- Journal art ---------- */
@@ -3148,4 +3137,21 @@ a.cell.live-arrived::before {
 /* Cast shadows may fall a little past the stage edge. */
 .iso-under {
   overflow: visible;
+}
+
+/* ---------- Logo: the excavation cube ---------- */
+
+.wordmark {
+  gap: 0.5rem;
+  line-height: 1;
+}
+
+.wordmark .logo-mark {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 1.9rem;
+  /* the cube's base sits a hair low against cap height; nudge it up */
+  margin-block: -0.2rem 0;
+  filter: drop-shadow(1.5px 1.5px 1px rgba(74, 47, 29, 0.22));
 }

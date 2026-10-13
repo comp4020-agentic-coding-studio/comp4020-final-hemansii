@@ -1,6 +1,5 @@
 ---
 import "../styles.css";
-import Mascot from "../components/Mascot.astro";
 
 interface Props {
   title: string;
@@ -16,6 +15,8 @@ const { title, fit = false } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -26,7 +27,7 @@ const { title, fit = false } = Astro.props;
   <body class:list={{ "fit-screen": fit }}>
     <header class="site-header">
       <a href="/" class="wordmark">
-        <Mascot class="mascot" />
+        <img class="logo-mark" src="/logo.webp" alt="" width="37" height="40" />
         The Dig
       </a>
       <nav aria-label="Main">
