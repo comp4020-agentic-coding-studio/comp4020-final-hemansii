@@ -2,8 +2,8 @@
 
 The Dig is a shared, persistent excavation game. Visitors get a capped
 number of digs a day, brush what they uncover, and slowly reconstruct one
-buried website together: a pastiche of a personal homepage from the late
-1990s, revealed one grid cell at a time. Finds go in a specimen tray, and
+buried website together: a pastiche of a personal homepage from the early
+2000s, revealed one grid cell at a time. Finds go in a specimen tray, and
 visitors leave field notes and theories for each other about what the
 site used to be.
 

@@ -5,7 +5,7 @@ import { changed } from "./events";
 import { specimens, theories, theoryEvidence, visitors } from "./schema";
 
 export type Evidence = { row: number; col: number; cell: Cell };
-export type TheoryEntry = { id: number; author: string; body: string; postedAt: string; evidence: Evidence[] };
+export type TheoryEntry = { id: number; author: string; authorId: string; body: string; postedAt: string; evidence: Evidence[] };
 
 const MAX_LEN = 300;
 // A theory leans on a few finds, not the whole tray.
@@ -40,7 +40,7 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
 export function listTheories(siteId: string, limit = 30): TheoryEntry[] {
   const site = SITES[siteId];
   const rows = db
-    .select({ id: theories.id, author: visitors.name, body: theories.body, postedAt: theories.postedAt })
+    .select({ id: theories.id, author: visitors.name, authorId: theories.visitorId, body: theories.body, postedAt: theories.postedAt })
     .from(theories)
     .innerJoin(visitors, eq(theories.visitorId, visitors.id))
     .where(eq(theories.siteId, siteId))

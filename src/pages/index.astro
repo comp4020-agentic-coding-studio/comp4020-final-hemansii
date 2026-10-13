@@ -65,8 +65,11 @@ const edges = (row: number, col: number): string | undefined => {
 <Layout title="The Dig" fit>
   <div class="expedition-bar">
     <div class="expedition-title">
-      <h1>Something is buried here</h1>
-      <p>Dig to feel for something, brush to reveal it. {DIGS_PER_DAY} digs a day each.</p>
+      <h1>A forgotten website is buried here</h1>
+      <p>
+        Someone's personal homepage from the early 2000s, lost when the free hosts shut down. Dig a section to find it,
+        brush it to read it, and piece the page back together. {DIGS_PER_DAY} digs a day each.
+      </p>
     </div>
     <ul class="status" aria-live="polite">
       <li class="whoami">
@@ -100,6 +103,7 @@ const edges = (row: number, col: number): string | undefined => {
   }
 
   <p class="flash" role="status" id="flash" hidden={!flash}>{flash}</p>
+  <div class="notices" id="notices" aria-live="polite" aria-label="New from other players"></div>
   <script type="application/json" id="flash-messages" set:html={JSON.stringify(MESSAGES)} />
 
   <form method="post" action="/api/dig" id="dig-form" class="visually-hidden" aria-hidden="true"></form>
@@ -188,7 +192,7 @@ const edges = (row: number, col: number): string | undefined => {
     <section class="mystery" id="mystery" aria-labelledby="mystery-heading">
       <img class="mystery-art" src="/props/soil-cube.webp" alt="" width="58" height="68" />
       <p class="mystery-kicker">The expedition's question</p>
-      <h2 id="mystery-heading">What do you think this site was?</h2>
+      <h2 id="mystery-heading">Whose website was this, and what was it for?</h2>
       <div id="mystery-latest" class="mystery-latest">
         {
           latestTheory ? (
@@ -197,14 +201,14 @@ const edges = (row: number, col: number): string | undefined => {
               Latest, from <strong>{latestTheory.author}</strong>: <q>{latestTheory.body}</q>
             </p>
           ) : (
-            <p>No one has ventured a guess yet. Dig, brush, and say what you think it was.</p>
+            <p>No one has a theory yet. Read the recovered fragments and guess who made this page, and why.</p>
           )
         }
       </div>
       <form method="post" action="/api/theories" class="mystery-form">
         <input type="hidden" name="from" value="mystery" />
         <label for="mystery-body" class="visually-hidden">Your theory about the buried site</label>
-        <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was someone's…" autocomplete="off" required />
+        <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was a teenager's…" autocomplete="off" required />
         <button type="submit">Log my theory</button>
       </form>
     </section>
@@ -214,8 +218,8 @@ const edges = (row: number, col: number): string | undefined => {
       <input type="radio" name="field-tab" id="tab-theories" class="visually-hidden" />
       <div class="tab-bar" role="tablist" aria-label="Field pane">
         <label for="tab-tray" class="tab-label">Tray</label>
-        <label for="tab-notes" class="tab-label">Field notes</label>
-        <label for="tab-theories" class="tab-label">Theories</label>
+        <label for="tab-notes" class="tab-label">Field notes <span class="tab-badge" data-badge="notes" hidden></span></label>
+        <label for="tab-theories" class="tab-label">Theories <span class="tab-badge" data-badge="theories" hidden></span></label>
       </div>
 
       <section class="panel tab-panel" id="tray" aria-labelledby="tray-heading">
@@ -257,7 +261,7 @@ const edges = (row: number, col: number): string | undefined => {
         <h2 id="notes-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z"/></svg> Field notes</h2>
         <form method="post" action="/api/notes" class="feed-form">
           <label for="note-body" class="visually-hidden">Leave a field note</label>
-          <textarea id="note-body" name="body" maxlength="300" rows="2" placeholder="Try row 4, col 1, looks promising…" required></textarea>
+          <textarea id="note-body" name="body" maxlength="300" rows="2" placeholder="The text in row 4 looks like a sidebar, try next to it…" required></textarea>
           <button type="submit">Post note</button>
         </form>
         <ul class="feed" id="notes-list">
@@ -265,12 +269,12 @@ const edges = (row: number, col: number): string | undefined => {
             notes.length === 0 && (
               <li class="feed-empty">
                 <img class="empty-art" src="/props/field-notebook.webp" alt="" width="64" height="51" />
-                No notes yet, be the first to leave one.
+                No notes yet. Tell the others where to dig or what you spotted.
               </li>
             )
           }
           {notes.map((n) => (
-            <li class="feed-item note-item" data-id={n.id}>
+            <li class="feed-item note-item" data-id={n.id} data-author={n.author} data-mine={n.authorId === visitor.id ? "" : undefined}>
               <p>{n.body}</p>
               <p class="feed-meta"><strong>{n.author}</strong></p>
             </li>
@@ -282,7 +286,7 @@ const edges = (row: number, col: number): string | undefined => {
         <h2 id="theories-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg> Theories</h2>
         <form method="post" action="/api/theories" class="feed-form theory-form">
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
-          <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this site was…" required></textarea>
+          <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this homepage belonged to…" required></textarea>
           <fieldset class="evidence-pick" id="evidence-pick" data-max={MAX_EVIDENCE}>
             <legend>Evidence from your tray <span>(up to {MAX_EVIDENCE}, optional)</span></legend>
             {tray.length === 0 && <p class="evidence-none">Save finds to your tray to cite them here.</p>}
@@ -300,12 +304,12 @@ const edges = (row: number, col: number): string | undefined => {
             theories.length === 0 && (
               <li class="feed-empty">
                 <img class="empty-art" src="/props/flag.webp" alt="" width="34" height="52" />
-                No theories yet, what do you think this was?
+                No theories yet. Whose homepage was this?
               </li>
             )
           }
           {theories.map((t) => (
-            <li class="feed-item theory-item" data-id={t.id}>
+            <li class="feed-item theory-item" data-id={t.id} data-author={t.author} data-mine={t.authorId === visitor.id ? "" : undefined}>
               <p>{t.body}</p>
               {t.evidence.length > 0 && (
                 <p class="theory-evidence">
@@ -372,9 +376,71 @@ const edges = (row: number, col: number): string | undefined => {
       const ids = new Set<string>();
       document
         .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
-        .forEach((el) => ids.add(el.dataset.id ?? el.dataset.key ?? ""));
+        .forEach((el) => ids.add(itemKey(el)));
       return { states, ids };
     }
+
+    // Notes and theories number their ids separately, so an item is keyed by
+    // its list too; otherwise theory 3 would pass for the old note 3.
+    function itemKey(el: HTMLElement): string {
+      return `${el.closest("ul, ol")?.id ?? ""}:${el.dataset.id ?? el.dataset.key ?? ""}`;
+    }
+
+    // A field note or theory from someone else pops up as a card and counts
+    // on its tab until that tab is opened, so it's seen even while the
+    // player has the tray open. Their own posts never notify them.
+    const noticesEl = document.getElementById("notices");
+    const unread = { notes: 0, theories: 0 };
+    const KIND = {
+      notes: { icon: "📓", verb: "left a field note", tab: "tab-notes" },
+      theories: { icon: "💡", verb: "has a theory", tab: "tab-theories" },
+    } as const;
+
+    function renderBadges(): void {
+      for (const key of ["notes", "theories"] as const) {
+        const badge = document.querySelector<HTMLElement>(`[data-badge="${key}"]`);
+        const open = (document.getElementById(KIND[key].tab) as HTMLInputElement | null)?.checked;
+        if (open) unread[key] = 0;
+        if (!badge) continue;
+        badge.textContent = String(unread[key]);
+        badge.hidden = unread[key] === 0;
+      }
+    }
+
+    function notify(key: "notes" | "theories", item: HTMLElement): void {
+      if (!noticesEl) return;
+      const { icon, verb, tab } = KIND[key];
+      const body = item.querySelector("p")?.textContent?.trim() ?? "";
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `notice notice-${key}`;
+      const head = document.createElement("span");
+      head.className = "notice-head";
+      head.textContent = `${icon} ${item.dataset.author ?? "Someone"} ${verb}`;
+      const text = document.createElement("span");
+      text.className = "notice-body";
+      text.textContent = body.length > 110 ? body.slice(0, 107) + "…" : body;
+      card.append(head, text);
+      const dismiss = (): void => {
+        card.classList.add("notice-out");
+        setTimeout(() => card.remove(), 220);
+      };
+      card.addEventListener("click", () => {
+        const radio = document.getElementById(tab) as HTMLInputElement | null;
+        if (radio) radio.checked = true;
+        renderBadges();
+        document.querySelector(`#${key}-list [data-id="${item.dataset.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        dismiss();
+      });
+      noticesEl.prepend(card);
+      // keep the stack short
+      [...noticesEl.children].slice(3).forEach((el) => el.remove());
+      setTimeout(dismiss, 7000);
+      unread[key] += 1;
+      renderBadges();
+    }
+
+    document.querySelectorAll('input[name="field-tab"]').forEach((r) => r.addEventListener("change", renderBadges));
 
     function markArrivals(before: ReturnType<typeof snapshot>): void {
       document.querySelectorAll<HTMLElement>("#dig-grid [data-cell]").forEach((el) => {
@@ -384,7 +450,11 @@ const edges = (row: number, col: number): string | undefined => {
       document
         .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
         .forEach((el) => {
-          if (!before.ids.has(el.dataset.id ?? el.dataset.key ?? "")) el.classList.add("live-new");
+          if (before.ids.has(itemKey(el))) return;
+          el.classList.add("live-new");
+          if (el.hasAttribute("data-mine")) return;
+          if (el.classList.contains("note-item")) notify("notes", el);
+          else if (el.classList.contains("theory-item")) notify("theories", el);
         });
     }
 

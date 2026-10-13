@@ -3,7 +3,7 @@ import { db } from "./db";
 import { changed } from "./events";
 import { notes, visitors } from "./schema";
 
-export type NoteEntry = { id: number; author: string; body: string; postedAt: string };
+export type NoteEntry = { id: number; author: string; authorId: string; body: string; postedAt: string };
 
 const MAX_LEN = 300;
 
@@ -16,7 +16,7 @@ export function postNote(visitorId: string, siteId: string, body: string): void 
 
 export function listNotes(siteId: string, limit = 30): NoteEntry[] {
   return db
-    .select({ id: notes.id, author: visitors.name, body: notes.body, postedAt: notes.postedAt })
+    .select({ id: notes.id, author: visitors.name, authorId: notes.visitorId, body: notes.body, postedAt: notes.postedAt })
     .from(notes)
     .innerJoin(visitors, eq(notes.visitorId, visitors.id))
     .where(eq(notes.siteId, siteId))
