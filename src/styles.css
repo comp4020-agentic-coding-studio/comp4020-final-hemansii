@@ -3155,3 +3155,119 @@ a.cell.live-arrived::before {
   margin-block: -0.2rem 0;
   filter: drop-shadow(1.5px 1.5px 1px rgba(74, 47, 29, 0.22));
 }
+
+/* =====================================================================
+   Board from the terrain sheets (public/terrain).
+   Turf tiles are clear, so the plot's grass (IsoSite) runs unbroken under
+   them with only faint survey lines between sections. A dug section shows
+   the trench-floor tile, with soil-strata walls on whichever far edges
+   meet shallower ground and a lip of turf on any edge that meets turf
+   (--wn, --ww, --ln, --lw, --ls, --le, set per tile in index.astro), so
+   neighbouring holes join into one trench.
+   ===================================================================== */
+
+.iso-field {
+  background: #b3d163;
+}
+
+.iso-stage #dig-grid {
+  background: none;
+}
+
+/* the floor tile starts at a different point in each section, so a run
+   of holes doesn't repeat */
+.iso-stage #dig-grid > :nth-child(3n) {
+  --fx: 37%;
+}
+
+.iso-stage #dig-grid > :nth-child(4n + 1) {
+  --fy: 61%;
+}
+
+.iso-stage #dig-grid > :nth-child(5n + 2) {
+  --fx: 78%;
+  --fy: 24%;
+}
+
+.iso-stage button.cell {
+  background: none;
+  box-shadow: inset 0 0 0 0.5px rgba(70, 100, 28, 0.3);
+}
+
+.iso-stage button.cell:not(.dusty)::after {
+  content: none;
+}
+
+.iso-stage button.cell:hover:not(:disabled) {
+  filter: none;
+  background: rgba(255, 250, 220, 0.24);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(70, 100, 28, 0.3),
+    inset 0 0 0 2.5px rgba(250, 243, 226, 0.9);
+}
+
+.iso-stage button.cell:disabled {
+  filter: none;
+  background: rgba(110, 100, 60, 0.14);
+}
+
+.iso-stage button.cell.dusty,
+.iso-stage a.cell {
+  /* lengths, not percentages, so every edge piece is sized off the tile
+     side (var(--s)) and a wall's foot can be ruled at its exact depth */
+  --lip: calc(var(--s) * 0.1);
+  --near: calc(var(--s) * 0.06);
+  --wall: calc(var(--s) * 0.17);
+  --dn: calc(var(--wn, 0) * var(--wall));
+  --dw: calc(var(--ww, 0) * var(--wall));
+  --edges:
+    url("/terrain/lip-h.webp") 0 0 / auto calc(var(--ln, 0) * var(--lip)) repeat-x,
+    url("/terrain/lip-v.webp") 0 0 / calc(var(--lw, 0) * var(--lip)) auto repeat-y,
+    url("/terrain/lip-s.webp") 0 100% / auto calc(var(--ls, 0) * var(--near)) repeat-x,
+    url("/terrain/lip-e.webp") 100% 0 / calc(var(--le, 0) * var(--near)) auto repeat-y,
+    /* the wall's foot, ruled in ink where it meets the floor */
+    linear-gradient(#4a2f1d, #4a2f1d) 0 var(--dn) / 100% calc(min(1, var(--wn, 0)) * 1.2px) no-repeat,
+    linear-gradient(#4a2f1d, #4a2f1d) var(--dw) 0 / calc(min(1, var(--ww, 0)) * 1.2px) 100% no-repeat,
+    /* the far-left wall faces away from the light */
+    linear-gradient(rgba(42, 18, 6, 0.34), rgba(42, 18, 6, 0.34)) 0 0 / var(--dw) 100% no-repeat,
+    url("/terrain/wall-h.webp") 0 0 / auto var(--dn) repeat-x,
+    url("/terrain/wall-v.webp") 0 0 / var(--dw) auto repeat-y,
+    /* and each wall shades the floor at its foot */
+    linear-gradient(to bottom, rgba(42, 18, 6, 0.38), transparent) 0 var(--dn) / 100% calc(min(1, var(--wn, 0)) * var(--s) * 0.16) no-repeat,
+    linear-gradient(to right, rgba(42, 18, 6, 0.42), transparent) var(--dw) 0 / calc(min(1, var(--ww, 0)) * var(--s) * 0.2) 100% no-repeat;
+  --floor: url("/terrain/floor.webp") var(--fx, 0%) var(--fy, 0%) / calc(var(--s) * 0.8) auto repeat;
+  box-shadow: inset 0 0 0 0.5px rgba(74, 40, 18, 0.35);
+}
+
+/* Dug: the trench floor with a scatter of loose, dusty soil still on it. */
+.iso-stage button.cell.dusty {
+  background:
+    var(--edges),
+    url("/terrain/decal-dust-a.webp") 60% 62% / 62% auto no-repeat,
+    var(--floor);
+}
+
+.iso-stage button.cell.dusty::after {
+  background: radial-gradient(circle at 40% 35%, #dca676, #ad6a3f 75%);
+  border: 1px solid #6b3a22;
+}
+
+/* Revealed: brushed right down, the floor darker and the walls a step
+   deeper, the find lying in it. */
+.iso-stage a.cell {
+  background:
+    var(--edges),
+    linear-gradient(rgba(58, 26, 8, 0.34), rgba(58, 26, 8, 0.34)),
+    var(--floor);
+}
+
+.iso-stage a.cell {
+  --wall: calc(var(--s) * 0.15);
+}
+
+.iso-stage a.cell:hover,
+.iso-stage a.cell:focus-visible {
+  box-shadow:
+    inset 0 0 0 0.5px rgba(74, 40, 18, 0.35),
+    inset 0 0 0 2.5px var(--gold);
+}

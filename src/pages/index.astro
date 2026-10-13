@@ -35,6 +35,31 @@ const MESSAGES: Record<string, string> = {
   "archive-bad-cell": "That section isn't yours to collect yet.",
 };
 const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
+
+// How far each section has been dug down: 0 turf, 1 dug, 2 brushed clean.
+// A hole shows a soil wall on a far edge (north, west) only where the
+// neighbour is shallower, and a lip of turf on any edge that meets turf, so
+// two holes side by side read as one trench. Past the plot's far edges is
+// the boundary trench; past its near edges, the block's turf margin.
+const depth = (row: number, col: number): number => {
+  const f = found.get(`${row}-${col}`);
+  return !f ? 0 : f.brushedAt ? 2 : 1;
+};
+const onPlot = (row: number, col: number): boolean => row >= 0 && row < ROWS && col >= 0 && col < COLS;
+const isTurf = (row: number, col: number): boolean => onPlot(row, col) && depth(row, col) === 0;
+const edges = (row: number, col: number): string | undefined => {
+  const d = depth(row, col);
+  if (d === 0) return undefined;
+  const v = {
+    wn: Math.max(0, d - depth(row - 1, col)),
+    ww: Math.max(0, d - depth(row, col - 1)),
+    ln: isTurf(row - 1, col) ? 1 : 0,
+    lw: isTurf(row, col - 1) ? 1 : 0,
+    ls: !onPlot(row + 1, col) || isTurf(row + 1, col) ? 1 : 0,
+    le: !onPlot(row, col + 1) || isTurf(row, col + 1) ? 1 : 0,
+  };
+  return Object.entries(v).map(([k, n]) => `--${k}: ${n}`).join("; ");
+};
 ---
 
 <Layout title="The Dig" fit>
@@ -107,6 +132,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                       id={`cell-${key}`}
                       data-cell={key}
                       data-state="revealed"
+                      style={edges(row, col)}
                       title={`${gridRef(row, col)}: uncovered by ${finding.finder}${finding.brusher ? `, brushed clean by ${finding.brusher}` : ""}`}
                       draggable="true"
                     ><span class="iso-face" data-kind={cell.kind} set:html={cell.html} /></a>
@@ -128,6 +154,7 @@ const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
                     id={`cell-${key}`}
                     data-cell={key}
                     data-state="dusty"
+                    style={edges(row, col)}
                     title={`${gridRef(row, col)}: uncovered by ${finding.finder}, waiting for a brush`}
                     formaction="/api/brush"
                     form="dig-form"
