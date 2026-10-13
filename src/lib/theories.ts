@@ -1,8 +1,9 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { type Cell, cellAt, SITES } from "../sites";
+import { type Cell, cellAt, names, siteFor } from "../sites";
 import { db } from "./db";
+import { rotate } from "./dig";
 import { changed } from "./events";
-import { specimens, theories, theoryEvidence, visitors } from "./schema";
+import { sites, specimens, theories, theoryEvidence, visitors } from "./schema";
 
 export type Evidence = { row: number; col: number; cell: Cell };
 export type TheoryEntry = { id: number; author: string; authorId: string; body: string; postedAt: string; evidence: Evidence[] };
@@ -13,10 +14,13 @@ export const MAX_EVIDENCE = 3;
 
 // `evidence` is "row-col" keys; only finds actually in the poster's own tray
 // are kept, so a theory can't cite a section nobody has brushed yet (that
-// would leak its content to everyone reading the feed).
-export function postTheory(visitorId: string, siteId: string, body: string, evidence: string[] = []): void {
+// would leak its content to everyone reading the feed). A theory that names
+// the site solves it: the site closes and the next one is buried. Returns
+// whether this theory was the one that solved it.
+export function postTheory(visitorId: string, siteId: string, body: string, evidence: string[] = []): boolean {
   const trimmed = body.trim().slice(0, MAX_LEN);
-  if (!trimmed) return;
+  if (!trimmed) return false;
+  const site = siteFor(siteId);
   const inTray = new Set(
     db
       .select({ row: specimens.row, col: specimens.col })
@@ -27,18 +31,24 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
   );
   const cited = [...new Set(evidence)].filter((key) => inTray.has(key)).slice(0, MAX_EVIDENCE);
 
-  db.transaction((tx) => {
+  const solved = db.transaction((tx) => {
     const { id } = tx.insert(theories).values({ siteId, visitorId, body: trimmed }).returning({ id: theories.id }).get();
     for (const key of cited) {
       const [row, col] = key.split("-").map(Number);
       tx.insert(theoryEvidence).values({ theoryId: id, row, col }).onConflictDoNothing().run();
     }
+    // still open? (a second correct guess in the same instant loses)
+    const open = tx.select({ closedAt: sites.closedAt }).from(sites).where(eq(sites.id, siteId)).get();
+    if (!site || open?.closedAt || !names(site, trimmed)) return false;
+    rotate(tx, siteId, visitorId);
+    return true;
   });
-  changed(siteId);
+  changed();
+  return solved;
 }
 
 export function listTheories(siteId: string, limit = 30): TheoryEntry[] {
-  const site = SITES[siteId];
+  const site = siteFor(siteId);
   const rows = db
     .select({ id: theories.id, author: visitors.name, authorId: theories.visitorId, body: theories.body, postedAt: theories.postedAt })
     .from(theories)

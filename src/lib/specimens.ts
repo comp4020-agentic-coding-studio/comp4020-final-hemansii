@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { type Cell, cellAt, SITES } from "../sites";
+import { type Cell, cellAt, siteFor } from "../sites";
 import { db } from "./db";
 import { specimens } from "./schema";
 import { findings } from "./dig";
@@ -29,7 +29,7 @@ export const KIND_LABELS: Record<string, string> = {
 };
 
 export function addToTray(visitorId: string, siteId: string, row: number, col: number): boolean {
-  const site = SITES[siteId];
+  const site = siteFor(siteId);
   if (!site) return false;
   if (!findings(siteId).get(`${row}-${col}`)?.brushedAt) return false;
   db.insert(specimens).values({ visitorId, siteId, row, col }).onConflictDoNothing().run();
@@ -53,7 +53,7 @@ export function setSpecimenNote(visitorId: string, siteId: string, row: number, 
 }
 
 export function trayFor(visitorId: string, siteId: string): SpecimenEntry[] {
-  const site = SITES[siteId];
+  const site = siteFor(siteId);
   if (!site) return [];
   const found = findings(siteId);
   const rows = db

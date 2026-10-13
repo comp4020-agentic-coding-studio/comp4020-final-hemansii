@@ -3981,3 +3981,13 @@ a.specimen-tag:hover {
 .tab-badge[hidden] {
   display: none;
 }
+
+/* A site was just named: the notice that announces the next dig. */
+.notice-solved {
+  border-left-color: var(--gold);
+  cursor: default;
+}
+
+.mystery-last {
+  margin-bottom: 0.25rem;
+}

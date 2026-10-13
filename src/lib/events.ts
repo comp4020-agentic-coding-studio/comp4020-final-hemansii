@@ -7,16 +7,18 @@ import { EventEmitter } from "node:events";
 const bus = new EventEmitter();
 bus.setMaxListeners(0);
 
-const topic = (siteId: string): string => `changed:${siteId}`;
+// One topic, not one per site: when a site is solved and the next one opens,
+// every session still watching the old one has to hear about it too.
+const TOPIC = "changed";
 
-// Call after a dig, brush, note or theory lands, so every open session for
-// that site can resync. The payload carries no state, just a reason to go
-// re-read the truth: listeners re-fetch rather than trust an event body.
-export function changed(siteId: string): void {
-  bus.emit(topic(siteId));
+// Call after a dig, brush, note or theory lands, so every open session can
+// resync. The payload carries no state, just a reason to go re-read the
+// truth: listeners re-fetch rather than trust an event body.
+export function changed(): void {
+  bus.emit(TOPIC);
 }
 
-export function subscribe(siteId: string, onChange: () => void): () => void {
-  bus.on(topic(siteId), onChange);
-  return () => bus.off(topic(siteId), onChange);
+export function subscribe(onChange: () => void): () => void {
+  bus.on(TOPIC, onChange);
+  return () => bus.off(TOPIC, onChange);
 }

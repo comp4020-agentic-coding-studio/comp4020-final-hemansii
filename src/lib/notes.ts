@@ -11,7 +11,7 @@ export function postNote(visitorId: string, siteId: string, body: string): void 
   const trimmed = body.trim().slice(0, MAX_LEN);
   if (!trimmed) return;
   db.insert(notes).values({ siteId, visitorId, body: trimmed }).run();
-  changed(siteId);
+  changed();
 }
 
 export function listNotes(siteId: string, limit = 30): NoteEntry[] {

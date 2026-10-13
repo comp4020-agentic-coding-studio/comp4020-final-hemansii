@@ -1,6 +1,6 @@
 import { alias } from "drizzle-orm/sqlite-core";
-import { and, asc, count, eq, isNull } from "drizzle-orm";
-import { COLS, ROWS, SITES, type Site } from "../sites";
+import { and, asc, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { COLS, ORDER, ROWS, type Site, contentKey, siteFor } from "../sites";
 import { db } from "./db";
 import { changed } from "./events";
 import { digs, sites, visitors } from "./schema";
@@ -20,10 +20,45 @@ export type BrushResult = "brushed" | "already-brushed" | "nothing-there" | "out
 export const today = (now = new Date()): string =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(now);
 
-export function openSite(): { id: string; site: Site } {
+export function openSite(): { id: string; site: Site; number: number } {
   const row = db.select().from(sites).where(isNull(sites.closedAt)).get();
-  if (!row || !SITES[row.id]) throw new Error("no open site with known content");
-  return { id: row.id, site: SITES[row.id] };
+  const site = row && siteFor(row.id);
+  if (!row || !site) throw new Error("no open site with known content");
+  return { id: row.id, site, number: db.select({ n: count() }).from(sites).get()?.n ?? 1 };
+}
+
+export type ClosedSite = { title: string; year: string; solvedBy: string | null; closedAt: string };
+
+// Closes the open site and buries the next one in ORDER, wrapping round
+// (with a fresh id, so the old dig's history stays put). Call inside the
+// transaction that decided the site is done, so two requests can't both
+// close it. `solvedBy` is null when the site was brushed clean unsolved.
+export function rotate(tx: Pick<typeof db, "select" | "update" | "insert">, siteId: string, solvedBy: string | null): void {
+  tx.update(sites)
+    .set({ closedAt: new Date().toISOString(), solvedBy })
+    .where(and(eq(sites.id, siteId), isNull(sites.closedAt)))
+    .run();
+  const key = ORDER[(ORDER.indexOf(contentKey(siteId)) + 1) % ORDER.length];
+  const round = tx.select({ n: count() }).from(sites).where(eq(sites.id, key)).get()?.n ?? 0;
+  let id = key;
+  for (let n = 2; round > 0 && tx.select({ id: sites.id }).from(sites).where(eq(sites.id, id)).get(); n++) id = `${key}~${n}`;
+  tx.insert(sites).values({ id }).run();
+}
+
+// The sites already dug and closed, newest first, with who named each one.
+export function closedSites(limit = 10): ClosedSite[] {
+  return db
+    .select({ id: sites.id, closedAt: sites.closedAt, solvedBy: visitors.name })
+    .from(sites)
+    .leftJoin(visitors, eq(sites.solvedBy, visitors.id))
+    .where(isNotNull(sites.closedAt))
+    .orderBy(desc(sites.closedAt))
+    .limit(limit)
+    .all()
+    .flatMap((r) => {
+      const site = siteFor(r.id);
+      return site ? [{ title: site.title, year: site.year, solvedBy: r.solvedBy, closedAt: r.closedAt ?? "" }] : [];
+    });
 }
 
 export function digsToday(visitorId: string): number {
@@ -86,7 +121,7 @@ export function dig(visitorId: string, row: number, col: number): DigResult {
       .run();
     return "ok";
   });
-  if (result === "ok") changed(siteId);
+  if (result === "ok") changed();
   return result;
 }
 
@@ -110,8 +145,15 @@ export function brush(visitorId: string, row: number, col: number): BrushResult 
       .set({ brushedAt: new Date().toISOString(), brushedBy: visitorId })
       .where(eq(digs.id, found.id))
       .run();
+    // the last section brushed clean ends the dig even if nobody named it
+    const clean = tx
+      .select({ n: count() })
+      .from(digs)
+      .where(and(eq(digs.siteId, siteId), isNotNull(digs.brushedAt)))
+      .get()?.n ?? 0;
+    if (clean >= ROWS * COLS) rotate(tx, siteId, null);
     return "brushed";
   });
-  if (result === "brushed") changed(siteId);
+  if (result === "brushed") changed();
   return result;
 }

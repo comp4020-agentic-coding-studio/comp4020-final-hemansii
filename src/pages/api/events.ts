@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import { openSite } from "../../lib/dig";
 import { subscribe } from "../../lib/events";
 
 // Server-sent events: one open stream per visitor, the only direction data
@@ -10,7 +9,6 @@ import { subscribe } from "../../lib/events";
 const PING_MS = 20_000;
 
 export const GET: APIRoute = ({ request }) => {
-  const { id: siteId } = openSite();
   const encoder = new TextEncoder();
 
   let unsubscribe = (): void => {};
@@ -19,7 +17,7 @@ export const GET: APIRoute = ({ request }) => {
   const stream = new ReadableStream({
     start(controller) {
       const send = (line: string): void => controller.enqueue(encoder.encode(line));
-      unsubscribe = subscribe(siteId, () => send("data: changed\n\n"));
+      unsubscribe = subscribe(() => send("data: changed\n\n"));
       ping = setInterval(() => send(": ping\n\n"), PING_MS);
       send("retry: 2000\n\n");
     },

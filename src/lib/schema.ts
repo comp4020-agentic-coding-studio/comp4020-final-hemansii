@@ -5,13 +5,15 @@ import { index, int, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-c
 // Migrations apply at boot (src/lib/db.ts); never edit the deployed DB by hand.
 
 // One row per buried site; the id is the slug of its content in src/sites/.
-// closed_at is set when a site rotates into the archive.
+// closed_at is set when a site rotates out (named in a theory, or brushed
+// clean), and solved_by is whoever's theory named it, if anyone did.
 export const sites = sqliteTable("sites", {
   id: text().primaryKey(),
   openedAt: text("opened_at")
     .notNull()
     .default(sql`(datetime('now'))`),
   closedAt: text("closed_at"),
+  solvedBy: text("solved_by"),
 });
 
 export const visitors = sqliteTable("visitors", {

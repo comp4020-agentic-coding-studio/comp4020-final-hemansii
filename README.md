@@ -2,8 +2,9 @@
 
 The Dig is a shared, persistent excavation game. Visitors get a capped
 number of digs a day, brush what they uncover, and slowly reconstruct one
-buried website together: a pastiche of a personal homepage from the early
-2000s, revealed one grid cell at a time. Finds go in a specimen tray, and
+buried website together: a famous 2000s site (Club Penguin, MySpace,
+Neopets, Bebo, Miniclip), revealed one grid cell at a time. The first
+theory that names it solves it, and the next site is buried. Finds go in a specimen tray, and
 visitors leave field notes and theories for each other about what the
 site used to be.
 
@@ -45,10 +46,7 @@ page is not something a test can check and is left to be judged.
 
 No decay ("silting") of untouched tiles over time, though the schema already
 timestamps every dig, so that is one migration away rather than a rewrite.
-No second buried site or an archive of closed ones; `sites.closedAt` exists
-in the schema for exactly that and isn't used yet. Both were left out on
-purpose rather than half built, so the one site that does exist works
-properly.
+Silting was left out on purpose rather than half built.
 
 ## Enforced versus judged
 

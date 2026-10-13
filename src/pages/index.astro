@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
-import { DIGS_PER_DAY, digsToday, findings, openSite } from "../lib/dig";
+import { DIGS_PER_DAY, closedSites, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
 import { MAX_EVIDENCE, listTheories } from "../lib/theories";
 import { KIND_LABELS, trayFor } from "../lib/specimens";
@@ -10,7 +10,9 @@ import { getOrCreateVisitor } from "../lib/visitor";
 import { recentActivity } from "../lib/activity";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
-const { id: siteId, site } = openSite();
+const { id: siteId, site, number } = openSite();
+const past = closedSites(5);
+const lastDig = past[0];
 const found = findings(siteId);
 const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
 const tray = trayFor(visitor.id, siteId);
@@ -30,6 +32,7 @@ const MESSAGES: Record<string, string> = {
   "name-set": "Name updated.",
   "note-ok": "Field note posted.",
   "theory-ok": "Theory posted.",
+  solved: "You named it! A new website has been buried. Start digging.",
   archived: "Added to your specimen tray.",
   unarchived: "Removed from your specimen tray.",
   "archive-bad-cell": "That section isn't yours to collect yet.",
@@ -65,10 +68,10 @@ const edges = (row: number, col: number): string | undefined => {
 <Layout title="The Dig" fit>
   <div class="expedition-bar">
     <div class="expedition-title">
-      <h1>A forgotten website is buried here</h1>
+      <h1>A famous 2000s website is buried here</h1>
       <p>
-        Someone's personal homepage from the early 2000s, lost when the free hosts shut down. Dig a section to find it,
-        brush it to read it, and piece the page back together. {DIGS_PER_DAY} digs a day each.
+        Dig a section to find it, brush it to read it, and be the first to name the site in a theory. Name it and the
+        next one gets buried. {DIGS_PER_DAY} digs a day each.
       </p>
     </div>
     <ul class="status" aria-live="polite">
@@ -191,9 +194,17 @@ const edges = (row: number, col: number): string | undefined => {
     <aside class="field-pane">
     <section class="mystery" id="mystery" aria-labelledby="mystery-heading">
       <img class="mystery-art" src="/props/soil-cube.webp" alt="" width="58" height="68" />
-      <p class="mystery-kicker">The expedition's question</p>
-      <h2 id="mystery-heading">Whose website was this, and what was it for?</h2>
-      <div id="mystery-latest" class="mystery-latest">
+      <p class="mystery-kicker">Dig site #{number}</p>
+      <h2 id="mystery-heading">Which famous website is this?</h2>
+      <div id="mystery-latest" class="mystery-latest" data-site={siteId}>
+        {
+          lastDig && (
+            <p class="mystery-last" data-last-solved={lastDig.solvedBy ? `${lastDig.solvedBy} named the last one: ${lastDig.title}` : `The last one was ${lastDig.title}, brushed clean unsolved`}>
+              Last dig: <strong>{lastDig.title}</strong> ({lastDig.year}),{" "}
+              {lastDig.solvedBy ? <>named by <strong>{lastDig.solvedBy}</strong>.</> : "brushed clean, nobody named it."}
+            </p>
+          )
+        }
         {
           latestTheory ? (
             <p>
@@ -201,14 +212,14 @@ const edges = (row: number, col: number): string | undefined => {
               Latest, from <strong>{latestTheory.author}</strong>: <q>{latestTheory.body}</q>
             </p>
           ) : (
-            <p>No one has a theory yet. Read the recovered fragments and guess who made this page, and why.</p>
+            <p>No guesses yet. Read the recovered fragments and name the site.</p>
           )
         }
       </div>
       <form method="post" action="/api/theories" class="mystery-form">
         <input type="hidden" name="from" value="mystery" />
         <label for="mystery-body" class="visually-hidden">Your theory about the buried site</label>
-        <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was a teenager's…" autocomplete="off" required />
+        <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was…" autocomplete="off" required />
         <button type="submit">Log my theory</button>
       </form>
     </section>
@@ -286,7 +297,7 @@ const edges = (row: number, col: number): string | undefined => {
         <h2 id="theories-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg> Theories</h2>
         <form method="post" action="/api/theories" class="feed-form theory-form">
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
-          <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this homepage belonged to…" required></textarea>
+          <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this was…" required></textarea>
           <fieldset class="evidence-pick" id="evidence-pick" data-max={MAX_EVIDENCE}>
             <legend>Evidence from your tray <span>(up to {MAX_EVIDENCE}, optional)</span></legend>
             {tray.length === 0 && <p class="evidence-none">Save finds to your tray to cite them here.</p>}
@@ -304,7 +315,7 @@ const edges = (row: number, col: number): string | undefined => {
             theories.length === 0 && (
               <li class="feed-empty">
                 <img class="empty-art" src="/props/flag.webp" alt="" width="34" height="52" />
-                No theories yet. Whose homepage was this?
+                No theories yet. Which website was this?
               </li>
             )
           }
@@ -337,6 +348,20 @@ const edges = (row: number, col: number): string | undefined => {
           ))}
         </ol>
       </section>
+      {
+        past.length > 0 && (
+          <section class="dig-log past-digs" aria-labelledby="past-digs-heading">
+            <h2 id="past-digs-heading">Past digs</h2>
+            <ol id="past-digs-list">
+              {past.map((p) => (
+                <li>
+                  <strong>{p.title}</strong> ({p.year}){p.solvedBy ? <>, named by {p.solvedBy}</> : ", unsolved"}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )
+      }
     </aside>
   </div>
 
@@ -442,6 +467,25 @@ const edges = (row: number, col: number): string | undefined => {
 
     document.querySelectorAll('input[name="field-tab"]').forEach((r) => r.addEventListener("change", renderBadges));
 
+    // The site was named (or brushed clean) and a new one buried: tell
+    // everyone, whoever did it.
+    function announceNewSite(): void {
+      const last = document.querySelector<HTMLElement>("[data-last-solved]")?.dataset.lastSolved;
+      if (!noticesEl || !last) return;
+      const card = document.createElement("div");
+      card.className = "notice notice-solved";
+      card.setAttribute("role", "status");
+      const head = document.createElement("span");
+      head.className = "notice-head";
+      head.textContent = `🎉 ${last}`;
+      const text = document.createElement("span");
+      text.className = "notice-body";
+      text.textContent = "A new website has been buried. Start digging!";
+      card.append(head, text);
+      noticesEl.prepend(card);
+      setTimeout(() => card.remove(), 9000);
+    }
+
     function markArrivals(before: ReturnType<typeof snapshot>): void {
       document.querySelectorAll<HTMLElement>("#dig-grid [data-cell]").forEach((el) => {
         const was = before.states.get(el.dataset.cell ?? "");
@@ -467,6 +511,23 @@ const edges = (row: number, col: number): string | undefined => {
         html = await res.text();
       }
       const fresh = new DOMParser().parseFromString(html, "text/html");
+      // a new site means a new page (heading, past digs, empty feeds), so
+      // swap the whole thing rather than piece by piece
+      const site = (doc: Document): string | undefined => doc.querySelector<HTMLElement>("[data-site]")?.dataset.site;
+      if (site(fresh) !== site(document)) {
+        // the whole field pane and header change; the notices stack and
+        // this script stay, and submits and drops are delegated or rebound
+        for (const sel of [".expedition-bar", ".excavation-layout"]) {
+          const next = fresh.querySelector(sel);
+          if (next) document.querySelector(sel)?.replaceWith(next);
+        }
+        document.querySelectorAll('input[name="field-tab"]').forEach((r) => r.addEventListener("change", renderBadges));
+        unread.notes = unread.theories = 0;
+        wireDragHandles();
+        wireDrop();
+        announceNewSite();
+        return;
+      }
       const before = snapshot();
       document.documentElement.classList.add("settled");
 
@@ -545,8 +606,11 @@ const edges = (row: number, col: number): string | undefined => {
       boxes.forEach((b) => (b.disabled = full && !b.checked));
     });
 
-    const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
-    if (drop) {
+    // The tray is replaced whole when a new site is buried, so its drop
+    // target is wired as a function too.
+    function wireDrop(): void {
+      const drop = document.querySelector<HTMLElement>("[data-tray-drop]");
+      if (!drop) return;
       drop.addEventListener("dragover", (e) => {
         e.preventDefault();
         drop.classList.add("drag-over");
@@ -559,6 +623,7 @@ const edges = (row: number, col: number): string | undefined => {
         if (cell) void act("/api/archive", new URLSearchParams({ cell, action: "add" }));
       });
     }
+    wireDrop();
 
     let debounce: ReturnType<typeof setTimeout> | undefined;
     const scheduleResync = (): void => {
