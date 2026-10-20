@@ -12,14 +12,15 @@ const MAX_LEN = 300;
 // A theory leans on a few finds, not the whole tray.
 export const MAX_EVIDENCE = 3;
 
+export type TheoryResult = "rejected" | "posted" | "solved";
+
 // `evidence` is "row-col" keys; only finds actually in the poster's own tray
 // are kept, so a theory can't cite a section nobody has brushed yet (that
 // would leak its content to everyone reading the feed). A theory that names
-// the site solves it: the site closes and the next one is buried. Returns
-// whether this theory was the one that solved it.
-export function postTheory(visitorId: string, siteId: string, body: string, evidence: string[] = []): boolean {
+// the site solves it: the site closes and the next one is buried.
+export function postTheory(visitorId: string, siteId: string, body: string, evidence: string[] = []): TheoryResult {
   const trimmed = body.trim().slice(0, MAX_LEN);
-  if (!trimmed) return false;
+  if (!trimmed) return "rejected";
   const site = siteFor(siteId);
   const inTray = new Set(
     db
@@ -44,7 +45,7 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
     return true;
   });
   changed();
-  return solved;
+  return solved ? "solved" : "posted";
 }
 
 export function listTheories(siteId: string, limit = 30): TheoryEntry[] {

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { audit } from "../../lib/audit";
 import { openSite } from "../../lib/dig";
 import { addToTray, removeFromTray } from "../../lib/specimens";
 import { getOrCreateVisitor } from "../../lib/visitor";
@@ -11,13 +12,19 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const { id: siteId } = openSite();
 
   let r = "archive-bad-cell";
+  const target = Number.isInteger(row) && Number.isInteger(col) ? `${row}-${col}` : String(form.get("cell") ?? "");
   if (Number.isInteger(row) && Number.isInteger(col)) {
     if (action === "remove") {
-      removeFromTray(visitor.id, siteId, row, col);
+      const removed = removeFromTray(visitor.id, siteId, row, col);
       r = "unarchived";
+      audit("specimen-remove", visitor, target, removed ? "ok" : "rejected");
     } else {
-      r = addToTray(visitor.id, siteId, row, col) ? "archived" : "archive-bad-cell";
+      const added = addToTray(visitor.id, siteId, row, col);
+      r = added ? "archived" : "archive-bad-cell";
+      audit("specimen-add", visitor, target, added ? "ok" : "rejected");
     }
+  } else {
+    audit(action === "remove" ? "specimen-remove" : "specimen-add", visitor, target, "rejected");
   }
 
   // Land back on the cell that was just added/removed, not the top of the

@@ -7,11 +7,14 @@ export type NoteEntry = { id: number; author: string; authorId: string; body: st
 
 const MAX_LEN = 300;
 
-export function postNote(visitorId: string, siteId: string, body: string): void {
+// Returns whether the note was actually posted (false for blank input, which
+// is ignored rather than an error).
+export function postNote(visitorId: string, siteId: string, body: string): boolean {
   const trimmed = body.trim().slice(0, MAX_LEN);
-  if (!trimmed) return;
+  if (!trimmed) return false;
   db.insert(notes).values({ siteId, visitorId, body: trimmed }).run();
   changed();
+  return true;
 }
 
 export function listNotes(siteId: string, limit = 30): NoteEntry[] {

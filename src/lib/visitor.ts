@@ -38,9 +38,11 @@ export function getOrCreateVisitor(cookies: AstroCookies): { visitor: Visitor; i
 }
 
 // Visitors can rename themselves at any time, most prominently right after
-// their first visit. Blank or whitespace-only input is ignored, not an error.
-export function setName(visitorId: string, name: string): void {
+// their first visit. Blank or whitespace-only input is ignored, not an
+// error; returns whether the name actually changed.
+export function setName(visitorId: string, name: string): boolean {
   const trimmed = name.trim().slice(0, 40);
-  if (!trimmed) return;
+  if (!trimmed) return false;
   db.update(visitors).set({ name: trimmed }).where(eq(visitors.id, visitorId)).run();
+  return true;
 }

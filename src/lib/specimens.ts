@@ -36,8 +36,10 @@ export function addToTray(visitorId: string, siteId: string, row: number, col: n
   return true;
 }
 
-export function removeFromTray(visitorId: string, siteId: string, row: number, col: number): void {
-  db.delete(specimens).where(and(...mine(visitorId, siteId, row, col))).run();
+// Returns whether a row was actually removed, so the caller can tell a real
+// removal from a request for a cell that was never in the tray.
+export function removeFromTray(visitorId: string, siteId: string, row: number, col: number): boolean {
+  return db.delete(specimens).where(and(...mine(visitorId, siteId, row, col))).run().changes > 0;
 }
 
 // Saves (or, given an empty note, clears) the visitor's note on a find in
