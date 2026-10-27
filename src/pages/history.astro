@@ -1,0 +1,54 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { digHistory } from "../lib/dig";
+
+const past = digHistory();
+
+const when = (iso: string): string =>
+  new Date(iso).toLocaleString("en-AU", { timeZone: "Australia/Sydney", dateStyle: "medium", timeStyle: "short" });
+---
+
+<Layout title="History, The Dig">
+  <header class="evidence-head">
+    <img class="evidence-emblem" src="/props/relic-emblem.webp" alt="" width="75" height="80" />
+    <div>
+      <p class="evidence-kicker">Expedition record</p>
+      <h1>Sites dug up so far</h1>
+      <p>Every buried site the expedition has already closed, newest first, with who named it and how much digging it took.</p>
+    </div>
+    <a href="/" class="evidence-back">← Back to the dig</a>
+  </header>
+
+  {
+    past.length === 0 ? (
+      <div class="evidence-empty">
+        <img src="/props/specimen-tray.webp" alt="" width="150" height="102" />
+        <p>Nothing's been dug up and closed yet. The first site is still open on the excavation.</p>
+      </div>
+    ) : (
+      <ol class="history-list">
+        {past.map((p) => (
+          <li class="history-item">
+            <div class="history-item-main">
+              <h2>{p.title} <span class="history-year">({p.year})</span></h2>
+              <p class="history-meta">
+                {p.solvedBy ? <>Named by <strong>{p.solvedBy}</strong></> : "Brushed clean, nobody named it"}
+                {" "}· closed {when(p.closedAt)}
+              </p>
+            </div>
+            <dl class="history-stats">
+              <div>
+                <dt>Diggers</dt>
+                <dd>{p.diggers}</dd>
+              </div>
+              <div>
+                <dt>Theories</dt>
+                <dd>{p.theories}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</Layout>

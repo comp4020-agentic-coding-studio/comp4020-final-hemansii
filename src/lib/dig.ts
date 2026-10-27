@@ -1,9 +1,9 @@
 import { alias } from "drizzle-orm/sqlite-core";
-import { and, asc, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { COLS, ORDER, ROWS, type Site, contentKey, siteFor } from "../sites";
 import { db } from "./db";
 import { changed } from "./events";
-import { digs, sites, visitors } from "./schema";
+import { digPurchases, digs, sites, theories, visitors } from "./schema";
 
 export const DIGS_PER_DAY = 5;
 
@@ -61,6 +61,61 @@ export function closedSites(limit = 10): ClosedSite[] {
     });
 }
 
+export type PastSite = {
+  id: string;
+  title: string;
+  year: string;
+  solvedBy: string | null;
+  openedAt: string;
+  closedAt: string;
+  diggers: number;
+  theories: number;
+};
+
+// Every closed site, newest first, with how many distinct visitors dug it
+// and how many theories were posted about it. Unlike closedSites() above
+// (a short teaser for the dig page), this is the full record for the
+// history page, so it takes no default limit.
+export function digHistory(limit?: number): PastSite[] {
+  const diggerCounts = db
+    .select({ siteId: digs.siteId, n: countDistinct(digs.visitorId) })
+    .from(digs)
+    .groupBy(digs.siteId)
+    .all();
+  const diggersBySite = new Map(diggerCounts.map((r) => [r.siteId, r.n]));
+
+  const theoryCounts = db.select({ siteId: theories.siteId, n: count() }).from(theories).groupBy(theories.siteId).all();
+  const theoriesBySite = new Map(theoryCounts.map((r) => [r.siteId, r.n]));
+
+  let query = db
+    .select({ id: sites.id, openedAt: sites.openedAt, closedAt: sites.closedAt, solvedBy: visitors.name })
+    .from(sites)
+    .leftJoin(visitors, eq(sites.solvedBy, visitors.id))
+    .where(isNotNull(sites.closedAt))
+    .orderBy(desc(sites.closedAt))
+    .$dynamic();
+  if (limit !== undefined) query = query.limit(limit);
+
+  return query
+    .all()
+    .flatMap((r) => {
+      const site = siteFor(r.id);
+      if (!site) return [];
+      return [
+        {
+          id: r.id,
+          title: site.title,
+          year: site.year,
+          solvedBy: r.solvedBy,
+          openedAt: r.openedAt,
+          closedAt: r.closedAt ?? "",
+          diggers: diggersBySite.get(r.id) ?? 0,
+          theories: theoriesBySite.get(r.id) ?? 0,
+        },
+      ];
+    });
+}
+
 export function digsToday(visitorId: string): number {
   return (
     db
@@ -69,6 +124,22 @@ export function digsToday(visitorId: string): number {
       .where(and(eq(digs.visitorId, visitorId), eq(digs.day, today())))
       .get()?.n ?? 0
   );
+}
+
+// How many bonus digs this visitor has bought today (src/lib/shop.ts), so
+// today's effective cap is DIGS_PER_DAY plus whatever they've paid for.
+export function digsPurchasedToday(visitorId: string): number {
+  return (
+    db
+      .select({ n: count() })
+      .from(digPurchases)
+      .where(and(eq(digPurchases.visitorId, visitorId), eq(digPurchases.day, today())))
+      .get()?.n ?? 0
+  );
+}
+
+export function digAllowance(visitorId: string): number {
+  return DIGS_PER_DAY + digsPurchasedToday(visitorId);
 }
 
 // Keyed "row-col". One entry per dug cell, whether or not it's been brushed
@@ -109,7 +180,7 @@ export function dig(visitorId: string, row: number, col: number): DigResult {
   let siteId = "";
   const result = db.transaction((tx) => {
     ({ id: siteId } = openSite());
-    if (digsToday(visitorId) >= DIGS_PER_DAY) return "out-of-digs";
+    if (digsToday(visitorId) >= digAllowance(visitorId)) return "out-of-digs";
     const taken = tx
       .select({ id: digs.id })
       .from(digs)

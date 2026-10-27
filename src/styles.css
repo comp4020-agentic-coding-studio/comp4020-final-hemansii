@@ -297,6 +297,8 @@ main > p {
 .rename-row button,
 .feed-form button,
 .specimen-card button,
+.buy-dig button,
+.trivia-form button,
 .tab-label {
   padding: 0.5rem 1rem;
   font: inherit;
@@ -315,16 +317,28 @@ main > p {
 
 .rename-row button:hover,
 .feed-form button:hover,
-.specimen-card button:hover {
+.specimen-card button:hover,
+.buy-dig button:hover,
+.trivia-form button:hover {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--ink);
 }
 
 .rename-row button:active,
 .feed-form button:active,
-.specimen-card button:active {
+.specimen-card button:active,
+.buy-dig button:active,
+.trivia-form button:active {
   transform: translate(2px, 2px);
   box-shadow: 0 0 0 var(--ink);
+}
+
+.buy-dig button:disabled,
+.trivia-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---------- Flash message: a caption box with a bold accent edge ---------- */
@@ -1747,6 +1761,38 @@ a.cell.live-arrived::before {
   border-radius: 3px;
   background: var(--gold);
   color: var(--ink);
+}
+
+/* ---------- Daily trivia card ---------- */
+
+.trivia-form p {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.trivia-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.trivia-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.trivia-done {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  color: var(--ink-soft);
 }
 
 /* ---------- Something another player just did, arriving live ---------- */
@@ -3873,6 +3919,85 @@ a.specimen-tag:hover {
 
   .evidence-back {
     grid-column: 1 / -1;
+  }
+}
+
+/* ---------- Expedition history (/history) ---------- */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 44rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1.1rem;
+  background: var(--paper-hi);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-item h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.history-year {
+  font-style: normal;
+  color: var(--ink-soft);
+}
+
+.history-meta {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.history-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  flex: none;
+  text-align: center;
+}
+
+.history-stats dt {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.history-stats dd {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 34rem) {
+  .history-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-stats {
+    align-self: flex-end;
   }
 }
 

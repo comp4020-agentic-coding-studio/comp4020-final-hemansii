@@ -22,6 +22,11 @@ export const visitors = sqliteTable("visitors", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
+  // Earned by solving a site and by the daily trivia question; spent on
+  // bonus digs. triviaStreak/lastTriviaDay track consecutive correct days.
+  shards: int().notNull().default(0),
+  triviaStreak: int("trivia_streak").notNull().default(0),
+  lastTriviaDay: text("last_trivia_day"),
 });
 
 // Append-only: a section's state is derived from its digs, never stored on it,
@@ -135,8 +140,49 @@ export const theoryEvidence = sqliteTable(
   (t) => [uniqueIndex("theory_evidence_unique").on(t.theoryId, t.row, t.col)],
 );
 
+// One attempt per visitor per Canberra day at the day's trivia question
+// (src/lib/trivia.ts picks which question that is). Recorded whether right
+// or wrong, so a visitor can't retry the same day for another shot at the
+// streak.
+export const triviaAnswers = sqliteTable(
+  "trivia_answers",
+  {
+    id: int().primaryKey({ autoIncrement: true }),
+    visitorId: text("visitor_id")
+      .notNull()
+      .references(() => visitors.id),
+    day: text().notNull(),
+    correct: int({ mode: "boolean" }).notNull(),
+    answeredAt: text("answered_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [uniqueIndex("trivia_answers_unique").on(t.visitorId, t.day)],
+);
+
+// Append-only, like digs: one row per bonus dig bought, so "how many has
+// this visitor bought today" (what the next one costs) is derived rather
+// than stored, the same pattern as digsToday().
+export const digPurchases = sqliteTable(
+  "dig_purchases",
+  {
+    id: int().primaryKey({ autoIncrement: true }),
+    visitorId: text("visitor_id")
+      .notNull()
+      .references(() => visitors.id),
+    day: text().notNull(),
+    cost: int().notNull(),
+    purchasedAt: text("purchased_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("dig_purchases_visitor_day").on(t.visitorId, t.day)],
+);
+
 export type Visitor = typeof visitors.$inferSelect;
 export type Dig = typeof digs.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type Theory = typeof theories.$inferSelect;
 export type Specimen = typeof specimens.$inferSelect;
+export type TriviaAnswer = typeof triviaAnswers.$inferSelect;
+export type DigPurchase = typeof digPurchases.$inferSelect;

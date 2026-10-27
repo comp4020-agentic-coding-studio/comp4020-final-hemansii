@@ -4,6 +4,7 @@ import { db } from "./db";
 import { rotate } from "./dig";
 import { changed } from "./events";
 import { sites, specimens, theories, theoryEvidence, visitors } from "./schema";
+import { awardSolve } from "./shop";
 
 export type Evidence = { row: number; col: number; cell: Cell };
 export type TheoryEntry = { id: number; author: string; authorId: string; body: string; postedAt: string; evidence: Evidence[] };
@@ -42,6 +43,7 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
     const open = tx.select({ closedAt: sites.closedAt }).from(sites).where(eq(sites.id, siteId)).get();
     if (!site || open?.closedAt || !names(site, trimmed)) return false;
     rotate(tx, siteId, visitorId);
+    awardSolve(tx, visitorId);
     return true;
   });
   changed();

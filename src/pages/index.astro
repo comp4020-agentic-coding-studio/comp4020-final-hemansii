@@ -2,24 +2,30 @@
 import Layout from "../layouts/Layout.astro";
 import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
-import { DIGS_PER_DAY, closedSites, digsToday, findings, openSite } from "../lib/dig";
+import { DIGS_PER_DAY, closedSites, digAllowance, digsToday, findings, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
 import { MAX_EVIDENCE, listTheories } from "../lib/theories";
 import { KIND_LABELS, trayFor } from "../lib/specimens";
 import { getOrCreateVisitor } from "../lib/visitor";
 import { recentActivity } from "../lib/activity";
+import { nextDigCost } from "../lib/shop";
+import { questionFor, triviaStatus } from "../lib/trivia";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
 const { id: siteId, site, number } = openSite();
 const past = closedSites(5);
 const lastDig = past[0];
 const found = findings(siteId);
-const left = Math.max(0, DIGS_PER_DAY - digsToday(visitor.id));
+const allowance = digAllowance(visitor.id);
+const left = Math.max(0, allowance - digsToday(visitor.id));
 const tray = trayFor(visitor.id, siteId);
 const notes = listNotes(siteId);
 const theories = listTheories(siteId);
 const activity = recentActivity(siteId, 14);
 const latestTheory = theories[0];
+const digCost = nextDigCost(visitor.id);
+const trivia = triviaStatus(visitor.id);
+const question = questionFor();
 
 const MESSAGES: Record<string, string> = {
   ok: "You felt something underneath, brush away the dust to see what it is.",
@@ -36,6 +42,12 @@ const MESSAGES: Record<string, string> = {
   archived: "Added to your specimen tray.",
   unarchived: "Removed from your specimen tray.",
   "archive-bad-cell": "That section isn't yours to collect yet.",
+  "buy-ok": "Bought a bonus dig. Back to the grid.",
+  "buy-not-enough-shards": "Not enough shards for another dig.",
+  "buy-digs-not-exhausted": "Use today's free digs before buying more.",
+  "trivia-correct": "Correct! Shards earned, come back tomorrow for another streak day.",
+  "trivia-wrong": "Not quite. Come back tomorrow for a fresh question.",
+  "trivia-already-answered": "Already answered today's question.",
 };
 const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
@@ -85,9 +97,17 @@ const edges = (row: number, col: number): string | undefined => {
           </form>
         </details>
       </li>
-      <li data-digs-left={left}><strong>{left}</strong> of {DIGS_PER_DAY} digs left today</li>
+      <li data-digs-left={left}><strong>{left}</strong> of {allowance} digs left today</li>
       <li data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
       <li id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
+      <li data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
+      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0}>
+        <form method="post" action="/api/shop">
+          <button type="submit" disabled={visitor.shards < digCost}>
+            Buy a dig for {digCost} 💎
+          </button>
+        </form>
+      </li>
     </ul>
   </div>
 
@@ -337,6 +357,29 @@ const edges = (row: number, col: number): string | undefined => {
           ))}
         </ul>
       </section>
+      <section class="dig-log trivia-card" id="trivia-card" aria-labelledby="trivia-heading">
+        <h2 id="trivia-heading">Daily trivia</h2>
+        {
+          trivia.answeredToday ? (
+            <p class="trivia-done">
+              {trivia.correct ? "✅ Correct today." : "You missed today's one."} Current streak: <strong>{trivia.streak}</strong> day{trivia.streak === 1 ? "" : "s"}. Come back tomorrow.
+            </p>
+          ) : (
+            <form method="post" action="/api/trivia" class="trivia-form">
+              <p>{question.q}</p>
+              <div class="trivia-choices">
+                {question.choices.map((choice, i) => (
+                  <label class="trivia-choice">
+                    <input type="radio" name="choice" value={i} required />
+                    <span>{choice}</span>
+                  </label>
+                ))}
+              </div>
+              <button type="submit">Answer</button>
+            </form>
+          )
+        }
+      </section>
       <section class="dig-log" aria-labelledby="dig-log-heading">
         <h2 id="dig-log-heading">Dig log</h2>
         <ol id="dig-log-list">
@@ -359,6 +402,7 @@ const edges = (row: number, col: number): string | undefined => {
                 </li>
               ))}
             </ol>
+            <a href="/history" class="panel-link">See the full history →</a>
           </section>
         )
       }
@@ -389,6 +433,8 @@ const edges = (row: number, col: number): string | undefined => {
       "tray-contents",
       "tray-count",
       "evidence-pick",
+      "buy-dig-slot",
+      "trivia-card",
     ];
 
     // What each region looked like before a resync, so whatever just changed
@@ -536,7 +582,7 @@ const edges = (row: number, col: number): string | undefined => {
         const current = document.getElementById(id);
         if (next && current) current.replaceWith(next);
       }
-      for (const attr of ["data-digs-left", "data-recovered"]) {
+      for (const attr of ["data-digs-left", "data-recovered", "data-shards"]) {
         const next = fresh.querySelector(`[${attr}]`);
         const current = document.querySelector(`[${attr}]`);
         if (next && current) current.replaceWith(next);
@@ -581,7 +627,7 @@ const edges = (row: number, col: number): string | undefined => {
       await resync(res.ok && landed.pathname === location.pathname ? await res.text() : undefined);
     }
 
-    const IN_PLACE = new Set(["/api/dig", "/api/brush", "/api/archive", "/api/notes", "/api/theories"]);
+    const IN_PLACE = new Set(["/api/dig", "/api/brush", "/api/archive", "/api/notes", "/api/theories", "/api/shop", "/api/trivia"]);
 
     document.addEventListener("submit", (e) => {
       const form = e.target as HTMLFormElement;
