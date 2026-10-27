@@ -212,17 +212,25 @@ main > p {
 .status {
   display: flex;
   flex-wrap: wrap;
+  align-items: stretch;
   gap: 0.6rem;
   margin: 0.9rem 0 1.1rem;
   padding: 0;
   list-style: none;
 }
 
+/* Every cell stretches to the row's shared height (the .status flex
+   container's align-items: stretch does this; the tallest cell, the
+   Buy-a-dig button, is what sets that shared height) and centres its own
+   contents inside that full height, rather than aligning to a text
+   baseline that only matches the shortest cell. */
 .status li {
-  display: inline-flex;
-  align-items: baseline;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0 0.8rem;
+  line-height: 1;
   background: var(--paper-hi);
   border: var(--line-thin) solid var(--ink);
   border-radius: 7px;
@@ -238,9 +246,12 @@ main > p {
 }
 
 .status li a {
-  display: inline-flex;
-  align-items: baseline;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   gap: 0.35rem;
+  line-height: 1;
   text-decoration: none;
 }
 
@@ -1909,7 +1920,7 @@ a.cell.live-arrived::before {
 
 .expedition-bar .status li,
 .expedition-bar .status li:nth-child(even) {
-  padding: 0.3rem 0.65rem;
+  padding: 0 0.65rem;
   font-size: 0.76rem;
   transform: none;
 }
@@ -2099,13 +2110,21 @@ a.cell.live-arrived::before {
   }
 
   /* The log takes whatever height the active panel leaves, and scrolls
-     inside itself if it runs long. */
-  .fit-screen .dig-log {
-    flex: 1 0 7rem;
-    min-height: 0;
+     inside itself if it runs long. The trivia card and past-digs sections
+     share the ledger look (.dig-log) but are short, fixed content, not
+     another scrolling log, so they size to their own content instead, the
+     same as the mystery header and tab bar above them. */
+  .fit-screen .dig-log:not(.trivia-card):not(.past-digs) {
+    flex: 1 1 auto;
+    min-height: 6rem;
     overflow-y: auto;
     padding: 0.6rem 0.9rem;
     background-image: none;
+  }
+
+  .fit-screen .trivia-card,
+  .fit-screen .past-digs {
+    flex: none;
   }
 
   .fit-screen .dig-log ol {
@@ -2145,11 +2164,21 @@ a.cell.live-arrived::before {
     overflow-y: auto;
   }
 
+  /* Tall enough that a panel's own form (heading, textarea, submit) is
+     never the thing that gets clipped when the panel is squeezed down to
+     its floor; only its list below the form scrolls out of view. Theories
+     gets a taller floor than Tray/Notes because its form also carries the
+     evidence-pick fieldset. */
   .fit-screen #tab-tray:checked ~ #tray,
   .fit-screen #tab-notes:checked ~ #notes,
   .fit-screen #tab-theories:checked ~ #theories {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    min-height: 9rem;
     padding: 0.75rem 0.9rem;
+  }
+
+  .fit-screen #tab-theories:checked ~ #theories {
+    min-height: 13rem;
   }
 
   .fit-screen .panel h2 {
@@ -2717,7 +2746,7 @@ a.cell.live-arrived::before {
 
 .expedition-bar .status li,
 .expedition-bar .status li:nth-child(even) {
-  padding: 0.4rem 0.85rem;
+  padding: 0 0.85rem;
   background: none;
   border: 0;
   border-right: 1px dashed rgba(21, 18, 13, 0.35);
@@ -2769,6 +2798,17 @@ a.cell.live-arrived::before {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+/* In the one-screen layout the pane's own height is fixed to the dig grid's,
+   so once the tray/log panels hit their floor (above) there may still be
+   more content (the trivia card, past digs) than fits: the pane scrolls as
+   a whole rather than clipping it, the same fallback a normal page gives
+   you, just scoped to this column instead of the whole viewport. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen .field-pane {
+    overflow-y: auto;
+  }
 }
 
 .field-pane > .mystery {
@@ -3182,7 +3222,7 @@ a.cell.live-arrived::before {
 /* The log scrolls inside the journal; fade its foot so a part-shown line
    reads as "more below" rather than clipped. */
 @media (min-width: 64rem) and (min-height: 36rem) {
-  .fit-screen .field-pane .dig-log {
+  .fit-screen .field-pane .dig-log:not(.trivia-card):not(.past-digs) {
     mask-image: linear-gradient(to bottom, #000 calc(100% - 1.6rem), transparent);
   }
 }
