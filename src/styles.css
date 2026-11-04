@@ -294,6 +294,7 @@ main > p {
 
 .rename-row input {
   flex: 1 1 14rem;
+  min-width: 0;
   padding: 0.5rem 0.7rem;
   font: inherit;
   font-family: var(--font-ui);
@@ -1943,15 +1944,31 @@ a.cell.live-arrived::before {
 .rename-banner .rename-row {
   flex: 1 1 18rem;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .rename-banner .rename-row input {
   padding: 0.3rem 0.55rem;
+  min-width: 0;
 }
 
 .rename-banner .rename-row button {
   padding: 0.35rem 0.8rem;
   white-space: nowrap;
+}
+
+/* nowrap above keeps the input and button on one line on wide screens, but
+   at phone widths there isn't room for both plus the button's own min
+   width: stack them, or the row forces the whole page to scroll sideways. */
+@media (max-width: 26rem) {
+  .rename-banner .rename-row {
+    flex-wrap: wrap;
+  }
+
+  .rename-banner .rename-row input,
+  .rename-banner .rename-row button {
+    flex-basis: 100%;
+  }
 }
 
 /* The outcome of an action floats as a toast over the page rather than
