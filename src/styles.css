@@ -245,6 +245,12 @@ main > p {
   transform: rotate(0.8deg);
 }
 
+/* display: flex above would otherwise beat the hidden attribute, leaving a
+   greyed-out Buy button on screen while the player still has free digs. */
+.status li[hidden] {
+  display: none;
+}
+
 .status li a {
   display: flex;
   align-items: center;
@@ -2000,7 +2006,12 @@ a.cell.live-arrived::before {
   left: 50%;
   bottom: 1.25rem;
   z-index: 20;
-  max-width: min(92vw, 32rem);
+  /* Without an explicit width, left: 50% leaves a fixed box only the right
+     half of the viewport to shrink-wrap into: on a phone that crushed the
+     toast to a word or two per line. */
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 32rem);
+  box-sizing: border-box;
   margin: 0;
   transform: translateX(-50%);
   box-shadow: var(--shadow);
@@ -2530,18 +2541,6 @@ a.cell.live-arrived::before {
   }
 }
 
-/* On a phone the whole pit would shrink to tiles too small to tap, so tiles
-   keep a minimum size and the field pans sideways instead. */
-@media (max-width: 40rem) {
-  .iso-field {
-    place-items: start;
-    overflow-x: auto;
-  }
-
-  .iso-stage {
-    --s: max(3rem, min(calc(100cqw / 12.81), calc(100cqh / 7.16)));
-  }
-}
 
 /* =====================================================================
    Polish pass: one visual language for the game.
@@ -2572,9 +2571,307 @@ a.cell.live-arrived::before {
   transform: rotate(-45deg) scale(1, 1.72414) translate(-50%, -50%);
 }
 
+/* ---------- Phone: the dig site is a map you drag, not a page that
+   scrolls sideways ----------
+   Shrinking the whole pit to fit 390px makes tiles too small to tap, so
+   tiles keep a floor size and the field becomes a fixed window onto a
+   larger stage. The browser pans it natively in both directions
+   (touch-action), and overscroll-behavior stops a drag at the map's edge
+   from carrying on into the page. Tap-versus-drag is decided in
+   index.astro. */
 @media (max-width: 40rem) {
+  .iso-field {
+    position: relative;
+    display: block;
+    /* Block containers honour justify-items now too: the base rule's
+       place-items: center would centre the oversized stage and push its
+       left part past the scroll origin, where no drag can reach it. */
+    place-items: normal;
+    overflow: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .iso-field::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Sized off the field's width only: off its height too, a short window
+     would shrink the tiles back down, which is the thing to avoid. */
   .iso-stage {
-    --s: max(3rem, min(calc(100cqw / 12.234), calc(100cqh / 7.622)));
+    --s: max(3.4rem, calc(100cqw / 12.234));
+  }
+
+  .dig-viewport {
+    position: relative;
+    border-radius: var(--radius);
+  }
+
+  /* Edge fades: only where more of the board exists past that edge. They
+     sit on the non-scrolling wrapper, so they stay put while the map moves
+     under them, and never take a tap. */
+  .edge-fade {
+    position: absolute;
+    z-index: 5;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+    --fade: rgba(43, 60, 18, 0.45);
+  }
+
+  .edge-left,
+  .edge-right {
+    top: 2px;
+    bottom: 2px;
+    width: 1.6rem;
+  }
+
+  .edge-top,
+  .edge-bottom {
+    left: 2px;
+    right: 2px;
+    height: 1.6rem;
+  }
+
+  .edge-left {
+    left: 2px;
+    background: linear-gradient(to right, var(--fade), transparent);
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+
+  .edge-right {
+    right: 2px;
+    background: linear-gradient(to left, var(--fade), transparent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .edge-top {
+    top: 2px;
+    background: linear-gradient(to bottom, var(--fade), transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .edge-bottom {
+    bottom: 2px;
+    background: linear-gradient(to top, var(--fade), transparent);
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+
+  .dig-viewport.pannable.more-left .edge-left,
+  .dig-viewport.pannable.more-right .edge-right,
+  .dig-viewport.pannable.more-up .edge-top,
+  .dig-viewport.pannable.more-down .edge-bottom {
+    opacity: 1;
+  }
+
+  .pan-hint {
+    position: absolute;
+    bottom: 0.85rem;
+    left: 50%;
+    z-index: 6;
+    width: max-content;
+    margin: 0;
+    translate: -50% 0;
+    padding: 0.4rem 0.8rem;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--paper-hi);
+    background: rgba(43, 26, 14, 0.82);
+    border-radius: 999px;
+    pointer-events: none;
+    animation: pan-hint-in 300ms ease-out 400ms both;
+  }
+
+  .pan-hint[hidden] {
+    display: none;
+  }
+
+  .iso-stage .iso-face {
+    font-size: clamp(0.62rem, calc(var(--s) * 0.15), 0.85rem);
+  }
+
+  .excavation-layout {
+    gap: 1rem;
+  }
+}
+
+@keyframes pan-hint-in {
+  from {
+    opacity: 0;
+    translate: -50% 0.4rem;
+  }
+}
+
+.pan-hint[hidden] {
+  display: none;
+}
+
+/* The map furniture only exists on a phone, where the field pans. Above
+   that the wrapper steps out of layout entirely, so the field is the dig
+   pane's flex child exactly as before and the one-screen sizing (flex: 1,
+   container-type: size) still gives the stage its height. */
+@media (min-width: 40.0625rem) {
+  .dig-viewport {
+    display: contents;
+  }
+
+  .pan-hint,
+  .edge-fade {
+    display: none;
+  }
+}
+
+/* A find already in the player's tray: a small tick where the + was. */
+.iso-stage .tray-saved {
+  position: absolute;
+  left: 84%;
+  top: 16%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: clamp(0.85rem, calc(var(--s) * 0.2), 1.15rem);
+  height: clamp(0.85rem, calc(var(--s) * 0.2), 1.15rem);
+  font-family: var(--font-ui);
+  font-size: clamp(0.55rem, calc(var(--s) * 0.13), 0.75rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: #4a8f3c;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: rotate(-45deg) scale(1, 1.72414) translate(-50%, -50%);
+  transform-origin: 0 0;
+}
+
+/* Touch has no hover and no drag-and-drop to the tray, so the revealed
+   find itself is the control there (index.astro); the + it replaces is
+   too small a target to sit right beside the thing you're tapping. */
+@media (pointer: coarse) {
+  .iso-stage .tray-add {
+    display: none;
+  }
+
+  .iso-stage .find:not([data-saved]) a.cell .iso-face {
+    box-shadow:
+      2px 3px 0 rgba(20, 8, 3, 0.45),
+      0 0 0 2px #e3ac3d;
+  }
+
+  .iso-stage .find:hover .iso-face,
+  .iso-stage .find:focus-within .iso-face {
+    scale: 1;
+  }
+
+  .hint-pointer {
+    display: none;
+  }
+}
+
+@media not (pointer: coarse) {
+  .hint-touch {
+    display: none;
+  }
+}
+
+/* ---------- Out of digs: answered where the player tapped ---------- */
+
+.out-of-digs {
+  position: fixed;
+  left: 50%;
+  z-index: 30;
+  width: min(22rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.95rem 1rem 1rem;
+  translate: -50% 0;
+  background: var(--paper-hi);
+  border: 2px solid var(--line-ink, var(--ink));
+  border-left: 6px solid var(--terracotta);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(43, 26, 14, 0.28);
+  animation: ood-in 180ms ease-out;
+}
+
+.out-of-digs[hidden] {
+  display: none;
+}
+
+.ood-title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.ood-body {
+  margin: 0 0 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.ood-body strong {
+  color: var(--ink);
+}
+
+.ood-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ood-actions form {
+  flex: 1 1 10rem;
+}
+
+.ood-actions form[hidden] {
+  display: none;
+}
+
+.ood-actions button {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+#ood-buy-button {
+  color: var(--paper-hi);
+  background: #c4502f;
+  border: 1.5px solid var(--line-ink, var(--ink));
+  box-shadow: 0 2px 0 rgba(74, 47, 29, 0.55);
+}
+
+.ood-close {
+  flex: 1 1 6rem;
+  width: auto;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid var(--line-ink, var(--ink));
+}
+
+@keyframes ood-in {
+  from {
+    opacity: 0;
+    translate: -50% 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .out-of-digs,
+  .pan-hint {
+    animation: none;
   }
 }
 
@@ -2797,6 +3094,149 @@ a.cell.live-arrived::before {
 
 .expedition-bar .status li:last-child {
   border-right: 0;
+}
+
+/* ---------- Phone: the tally strip becomes a stacked card ----------
+   One strip of dashed-ruled cells wraps into a jumble at 390px, so on a
+   phone it's rebuilt as rows: who you are, a 2x2 grid of the four counts,
+   the Buy button (only once the free digs are gone), then who else is here. */
+@media (max-width: 40rem) {
+  .expedition-bar {
+    gap: 0.75rem;
+  }
+
+  .expedition-title h1 {
+    font-size: 1.3rem;
+    text-wrap: balance;
+  }
+
+  .expedition-title p {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .expedition-bar .status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    padding: 0.35rem 0;
+  }
+
+  .expedition-bar .status li,
+  .expedition-bar .status li:nth-child(even) {
+    justify-content: flex-start;
+    min-height: 2.6rem;
+    padding: 0.35rem 0.85rem;
+    border-right: 0;
+    font-size: 0.8rem;
+    line-height: 1.25;
+  }
+
+  /* As flex items the count and its label wrap as separate pieces ("0" on
+     one line, "/ 60 sections" beside it, "recovered" below); as one line
+     of text they wrap like a sentence. */
+  .expedition-bar .status .stat {
+    display: block;
+    align-content: center;
+  }
+
+  .expedition-bar .status .stat a {
+    display: inline;
+  }
+
+  .expedition-bar .status .whoami,
+  .expedition-bar .status .buy-dig,
+  .expedition-bar .status .here-now {
+    grid-column: 1 / -1;
+  }
+
+  .expedition-bar .status .whoami {
+    padding-block: 0.5rem 0.6rem;
+    border-bottom: 1px dashed rgba(21, 18, 13, 0.3);
+  }
+
+  .expedition-bar .status .whoami details {
+    width: 100%;
+  }
+
+  .expedition-bar .status .whoami summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem 0.35rem;
+    min-height: 2.75rem;
+  }
+
+  .expedition-bar .status .whoami strong {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .whoami-edit {
+    margin-left: auto;
+    padding: 0.35rem 0;
+    font-size: 0.8rem;
+  }
+
+  .rename-inline {
+    flex-wrap: wrap;
+  }
+
+  .rename-inline input {
+    flex: 1 1 10rem;
+    width: auto;
+    min-width: 0;
+    min-height: 2.6rem;
+  }
+
+  .rename-inline button {
+    min-height: 2.6rem;
+  }
+
+  .expedition-bar .status .buy-dig {
+    padding-block: 0.4rem;
+  }
+
+  .expedition-bar .status .buy-dig form,
+  .expedition-bar .status .buy-dig button {
+    width: 100%;
+  }
+
+  .expedition-bar .status .buy-dig button {
+    min-height: 2.75rem;
+    font-size: 0.88rem;
+  }
+
+  .expedition-bar .status .here-now {
+    display: block;
+    align-content: center;
+    border-top: 1px dashed rgba(21, 18, 13, 0.3);
+    margin-top: 0.15rem;
+  }
+
+  .expedition-bar .status .here-now .here-dot {
+    display: inline-block;
+    margin-right: 0.4rem;
+    vertical-align: 0.1em;
+  }
+
+  .rename-banner {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .rename-banner label {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .rename-banner .rename-row input,
+  .rename-banner .rename-row button {
+    min-height: 2.75rem;
+  }
+
+  .rename-banner .rename-row button {
+    font-size: 0.88rem;
+  }
 }
 
 .rename-banner {
@@ -4194,4 +4634,15 @@ a.specimen-tag:hover {
 
 .mystery-last {
   margin-bottom: 0.25rem;
+}
+
+/* Spent ground: no free digs left today. Last in the file so it outranks
+   every earlier tile skin. Still a live button rather than disabled, so a
+   tap explains why nothing happened instead of being silently swallowed. */
+.iso-stage button.cell[data-spent],
+.iso-stage button.cell[data-spent]:hover {
+  cursor: not-allowed;
+  background: rgba(110, 100, 60, 0.14);
+  box-shadow: inset 0 0 0 0.5px rgba(70, 100, 28, 0.3);
+  filter: none;
 }

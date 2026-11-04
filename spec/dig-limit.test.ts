@@ -11,7 +11,15 @@ it("each visitor gets 5 digs a day; the 6th is refused and digs nothing", async 
   for (const cell of cells.slice(0, 5)) expect(await visitor.dig(cell)).toBe("ok");
   expect(await visitor.dig(cells[5])).toBe("out-of-digs");
 
-  expect(stateOf((await visitor.page()).doc, cells[5])).toBe("buried");
+  const after = (await visitor.page()).doc;
+  expect(stateOf(after, cells[5])).toBe("buried");
+
+  // Out of digs, the ground is still tappable: a disabled button swallows
+  // the tap silently, and the player gets no word on why nothing happened.
+  // It's marked spent instead, and the server's refusal above still holds.
+  const tile = after.querySelector<HTMLButtonElement>(`[data-cell="${cells[5]}"]`);
+  expect(tile?.disabled).toBe(false);
+  expect(tile?.hasAttribute("data-spent")).toBe(true);
 });
 
 it("a section someone already uncovered can't be dug again", async () => {

@@ -17,6 +17,25 @@ async function brushedFinds(player: TestVisitor, n: number): Promise<string[]> {
   return cells;
 }
 
+it("a saved find shows as saved on the dig site, with no add control left on it", async () => {
+  const player = new TestVisitor(baseUrl);
+  const [cell] = await brushedFinds(player, 1);
+  const find = (doc: Document) => doc.querySelector(`[data-cell="${cell}"]`)?.closest(".find");
+
+  expect(find((await player.page()).doc)?.querySelector(".tray-add")).not.toBeNull();
+  expect(await player.collect(cell)).toBe("archived");
+
+  const mine = find((await player.page()).doc);
+  expect(mine?.hasAttribute("data-saved")).toBe(true);
+  expect(mine?.querySelector(".tray-add")).toBeNull();
+  expect(mine?.querySelector(".tray-saved")).not.toBeNull();
+
+  // the tray is private, so nobody else sees it marked as saved
+  const theirs = find((await new TestVisitor(baseUrl).page()).doc);
+  expect(theirs?.hasAttribute("data-saved")).toBe(false);
+  expect(theirs?.querySelector(".tray-add")).not.toBeNull();
+});
+
 it("a note on a saved find persists for its owner and stays private", async () => {
   const player = new TestVisitor(baseUrl);
   const [cell] = await brushedFinds(player, 1);

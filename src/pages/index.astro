@@ -21,6 +21,7 @@ const found = findings(siteId);
 const allowance = digAllowance(visitor.id);
 const left = Math.max(0, allowance - digsToday(visitor.id));
 const tray = trayFor(visitor.id, siteId);
+const saved = new Set(tray.map(({ row, col }) => `${row}-${col}`));
 const notes = listNotes(siteId);
 const theories = listTheories(siteId);
 const activity = recentActivity(siteId, 14);
@@ -99,11 +100,11 @@ const edges = (row: number, col: number): string | undefined => {
           </form>
         </details>
       </li>
-      <li data-digs-left={left}><strong>{left}</strong> of {allowance} digs left today</li>
-      <li data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
-      <li id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
-      <li data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
-      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0}>
+      <li class="stat" data-digs-left={left}><strong>{left}</strong> of {allowance} digs left today</li>
+      <li class="stat" data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
+      <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
+      <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
+      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost}>
         <form method="post" action="/api/shop">
           <button type="submit" disabled={visitor.shards < digCost}>
             Buy a dig for {digCost} 💎
@@ -132,6 +133,18 @@ const edges = (row: number, col: number): string | undefined => {
   }
 
   <p class="flash" role="status" id="flash" hidden={!flash}>{flash}</p>
+  <div class="out-of-digs" id="out-of-digs" role="dialog" aria-labelledby="ood-title" aria-describedby="ood-body" hidden>
+    <p class="ood-title" id="ood-title">You've used all your digs for today</p>
+    <p class="ood-body" id="ood-body">
+      You have <strong id="ood-shards">0</strong> 💎. <span id="ood-detail"></span>
+    </p>
+    <div class="ood-actions">
+      <form method="post" action="/api/shop" id="ood-buy">
+        <button type="submit" id="ood-buy-button">Buy a dig</button>
+      </form>
+      <button type="button" class="ood-close" id="ood-close">Not now</button>
+    </div>
+  </div>
   <div class="notices" id="notices" aria-live="polite" aria-label="New from other players"></div>
   <script type="application/json" id="flash-messages" set:html={JSON.stringify(MESSAGES)} />
 
@@ -139,7 +152,13 @@ const edges = (row: number, col: number): string | undefined => {
 
   <div class="excavation-layout">
     <div class="dig-pane">
-      <div class="iso-field">
+      <div class="dig-viewport" id="dig-viewport">
+      <p class="pan-hint" id="pan-hint" aria-hidden="true" hidden>Drag to explore the dig site</p>
+      <span class="edge-fade edge-left" aria-hidden="true"></span>
+      <span class="edge-fade edge-right" aria-hidden="true"></span>
+      <span class="edge-fade edge-top" aria-hidden="true"></span>
+      <span class="edge-fade edge-bottom" aria-hidden="true"></span>
+      <div class="iso-field" id="iso-field">
       <div class="iso-stage">
         <IsoSite layer="under" class="iso-under" />
       <fieldset class="grid iso-plane" id="dig-grid">
@@ -157,8 +176,9 @@ const edges = (row: number, col: number): string | undefined => {
               const finding = found.get(key);
               const cell = cellAt(site, row, col);
               if (finding?.brushedAt && cell) {
+                const isSaved = saved.has(key);
                 return (
-                  <div class="find">
+                  <div class="find" data-saved={isSaved ? "" : undefined}>
                     <a
                       class="cell"
                       href={`/section/${key}`}
@@ -170,11 +190,18 @@ const edges = (row: number, col: number): string | undefined => {
                       draggable="true"
                     ><span class="iso-face" data-kind={cell.kind} set:html={cell.html} /></a>
                     <span class="grid-tag" aria-hidden="true">{gridRef(row, col)}</span>
-                    <form method="post" action="/api/archive" class="tray-add">
-                      <input type="hidden" name="cell" value={key} />
-                      <input type="hidden" name="action" value="add" />
-                      <button type="submit" title="Add to specimen tray" aria-label={`Add row ${row + 1}, column ${col + 1} to your tray`}>+</button>
-                    </form>
+                    {isSaved ? (
+                      <span class="tray-saved" title="In your specimen tray">
+                        <span aria-hidden="true">✓</span>
+                        <span class="visually-hidden">Row {row + 1}, column {col + 1} is in your tray</span>
+                      </span>
+                    ) : (
+                      <form method="post" action="/api/archive" class="tray-add">
+                        <input type="hidden" name="cell" value={key} />
+                        <input type="hidden" name="action" value="add" />
+                        <button type="submit" title="Add to specimen tray" aria-label={`Add row ${row + 1}, column ${col + 1} to your tray`}>+</button>
+                      </form>
+                    )}
                   </div>
                 );
               }
@@ -203,7 +230,7 @@ const edges = (row: number, col: number): string | undefined => {
                   id={`cell-${key}`}
                   data-cell={key}
                   data-state="buried"
-                  disabled={left === 0}
+                  data-spent={left === 0 ? "" : undefined}
                   form="dig-form"
                   aria-label={`Dig row ${row + 1}, column ${col + 1}`}
                 />
@@ -213,6 +240,7 @@ const edges = (row: number, col: number): string | undefined => {
         }
       </fieldset>
         <IsoSite layer="over" class="iso-over" />
+      </div>
       </div>
       </div>
     </div>
@@ -267,7 +295,8 @@ const edges = (row: number, col: number): string | undefined => {
             tray.length === 0 ? (
               <p class="tray-empty">
                 <img class="empty-art" src="/props/specimen-tray.webp" alt="" width="72" height="49" />
-                Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.
+                <span class="hint-pointer">Drag a recovered find here to add it to your tray, or use its <strong>+</strong> button.</span>
+                <span class="hint-touch">Tap a recovered find on the dig site to add it to your tray.</span>
               </p>
             ) : (
               <ul class="tray-items">
@@ -568,16 +597,30 @@ const edges = (row: number, col: number): string | undefined => {
       const site = (doc: Document): string | undefined => doc.querySelector<HTMLElement>("[data-site]")?.dataset.site;
       if (site(fresh) !== site(document)) {
         // the whole field pane and header change; the notices stack and
-        // this script stay, and submits and drops are delegated or rebound
+        // this script stay, and submits and drops are delegated or rebound.
+        // The dig field itself is kept and only its contents swapped, since
+        // the pan and tap handling is bound to it, and the live headcount
+        // carries over rather than resetting to whatever the fetch rendered.
+        const here = document.getElementById("here-count")?.cloneNode(true);
+        const keptViewport = document.getElementById("dig-viewport");
+        const freshViewport = fresh.getElementById("dig-viewport");
+        const freshStage = freshViewport?.querySelector(".iso-stage");
+        const keptStage = keptViewport?.querySelector(".iso-stage");
+        if (keptViewport && freshViewport && freshStage && keptStage) {
+          keptStage.replaceWith(freshStage);
+          freshViewport.replaceWith(keptViewport);
+        }
         for (const sel of [".expedition-bar", ".excavation-layout"]) {
           const next = fresh.querySelector(sel);
           if (next) document.querySelector(sel)?.replaceWith(next);
         }
+        if (here) document.getElementById("here-count")?.replaceWith(here);
         document.querySelectorAll('input[name="field-tab"]').forEach((r) => r.addEventListener("change", renderBadges));
         unread.notes = unread.theories = 0;
         wireDragHandles();
         wireDrop();
         announceNewSite();
+        centreField();
         return;
       }
       const before = snapshot();
@@ -622,18 +665,80 @@ const edges = (row: number, col: number): string | undefined => {
 
     // Posts an action the way its form would, then updates the page where it
     // stands instead of following the redirect into a full reload.
-    async function act(action: string, body: URLSearchParams): Promise<void> {
+    async function act(action: string, body: URLSearchParams, near?: Element): Promise<void> {
       const res = await fetch(action, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body,
       });
       const landed = new URL(res.url);
-      showFlash(landed.searchParams.get("r"));
+      const result = landed.searchParams.get("r");
       await resync(res.ok && landed.pathname === location.pathname ? await res.text() : undefined);
+      // Out of digs is answered where the player tapped, not as a toast in
+      // the corner; the tile was re-rendered by the resync, so find it again.
+      if (result === "out-of-digs") {
+        const cell = body.get("cell");
+        showOutOfDigs((cell && document.getElementById(`cell-${cell}`)) || near);
+        return;
+      }
+      showFlash(result);
     }
 
     const IN_PLACE = new Set(["/api/dig", "/api/brush", "/api/archive", "/api/notes", "/api/theories", "/api/shop", "/api/trivia"]);
+
+    // Out of digs, told where the player tapped rather than in the status
+    // strip they may have scrolled past. The server still enforces both the
+    // cap and the price; this only reads the numbers it last rendered.
+    const oodEl = document.getElementById("out-of-digs");
+    function digsLeft(): number {
+      return Number(document.querySelector<HTMLElement>("[data-digs-left]")?.dataset.digsLeft ?? 0);
+    }
+    function showOutOfDigs(near?: Element): void {
+      if (!oodEl) return;
+      const shards = Number(document.querySelector<HTMLElement>("[data-shards]")?.dataset.shards ?? 0);
+      const cost = Number(document.getElementById("buy-dig-slot")?.dataset.cost ?? 10);
+      const affordable = shards >= cost;
+      const shardsEl = document.getElementById("ood-shards");
+      const detail = document.getElementById("ood-detail");
+      const buy = document.getElementById("ood-buy");
+      const buyButton = document.getElementById("ood-buy-button");
+      if (shardsEl) shardsEl.textContent = String(shards);
+      if (detail) {
+        detail.textContent = affordable
+          ? `A bonus dig costs ${cost} 💎.`
+          : `A bonus dig costs ${cost} 💎, so you need ${cost - shards} more. Solve a site or answer the daily trivia to earn some, or come back tomorrow.`;
+      }
+      if (buy) buy.hidden = !affordable;
+      if (buyButton) buyButton.textContent = `Buy a dig for ${cost} 💎`;
+      // one message at a time: a toast left over from the last dig would
+      // otherwise sit on top of this
+      const toast = document.getElementById("flash");
+      if (toast) toast.hidden = true;
+      oodEl.hidden = false;
+      // Sits just under the tapped tile if there's room below it, else above.
+      const rect = near?.getBoundingClientRect();
+      const box = oodEl.getBoundingClientRect();
+      const margin = 12;
+      let top = rect ? rect.bottom + margin : (window.innerHeight - box.height) / 2;
+      if (rect && top + box.height > window.innerHeight - margin) top = rect.top - box.height - margin;
+      oodEl.style.top = `${Math.max(margin, Math.min(top, window.innerHeight - box.height - margin))}px`;
+      (affordable ? buyButton : document.getElementById("ood-close"))?.focus({ preventScroll: true });
+    }
+    function hideOutOfDigs(): void {
+      if (oodEl) oodEl.hidden = true;
+    }
+    document.getElementById("ood-close")?.addEventListener("click", hideOutOfDigs);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideOutOfDigs();
+    });
+    document.addEventListener("pointerdown", (e) => {
+      if (oodEl && !oodEl.hidden && !oodEl.contains(e.target as Node)) hideOutOfDigs();
+    });
+
+    // Touch has no hover and no drag-and-drop to the tray, so on a coarse
+    // pointer the revealed find itself is the add-to-tray control, and the
+    // small + is hidden. A find already in the tray opens its detail page.
+    const coarse = window.matchMedia("(pointer: coarse)");
 
     document.addEventListener("submit", (e) => {
       const form = e.target as HTMLFormElement;
@@ -641,12 +746,140 @@ const edges = (row: number, col: number): string | undefined => {
       const action = submitter?.getAttribute("formaction") ?? form.getAttribute("action") ?? "";
       if (!IN_PLACE.has(action)) return;
       e.preventDefault();
+      hideOutOfDigs();
+      if (action === "/api/dig" && submitter?.dataset.state === "buried" && digsLeft() === 0) {
+        showOutOfDigs(submitter);
+        return;
+      }
       // entries, not an object, so repeated fields (several evidence picks)
       // all survive
       const body = new URLSearchParams([...new FormData(form, submitter)].map(([k, v]) => [k, String(v)]));
       if (form.querySelector("[name=body]")) form.reset();
-      void act(action, body);
+      void act(action, body, submitter ?? undefined);
     });
+
+    // The dig site on a phone: a bounded map the player drags around, never
+    // a page that scrolls sideways. The browser does the panning itself
+    // (touch-action on the field), so it stays smooth; this only decides
+    // which finger-ups count as taps.
+    const field = document.getElementById("iso-field");
+    const TAP_SLOP = 10;
+    let down: { x: number; y: number; id: number } | null = null;
+    let dragged = false;
+
+    field?.addEventListener(
+      "pointerdown",
+      (e) => {
+        down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+        dragged = false;
+      },
+      { passive: true },
+    );
+    field?.addEventListener(
+      "pointermove",
+      (e) => {
+        if (!down || e.pointerId !== down.id || dragged) return;
+        if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > TAP_SLOP) dragged = true;
+      },
+      { passive: true },
+    );
+    // A pan the browser takes over fires pointercancel, never a click, but
+    // a slow drag can still end in one: either way it's not a tap.
+    field?.addEventListener("pointercancel", () => {
+      dragged = true;
+    });
+    // Only a scroll the player started counts as having explored the map;
+    // the scroll centreField() makes on load mustn't dismiss the hint.
+    field?.addEventListener("scroll", () => {
+      if (!down) return;
+      dragged = true;
+      hidePanHint();
+    }, { passive: true });
+
+    // Capture phase, on the field rather than the grid: the grid is replaced
+    // on every resync, the field isn't, and this has to run before the
+    // tile's own button or link acts on the click.
+    field?.addEventListener(
+      "click",
+      (e) => {
+        const wasDrag = dragged;
+        down = null;
+        dragged = false;
+        // any deliberate touch on the map means they've found it
+        hidePanHint();
+        if (wasDrag) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (!coarse.matches) return;
+        const link = (e.target as Element).closest<HTMLAnchorElement>("a.cell[data-state='revealed']");
+        const find = link?.closest<HTMLElement>(".find");
+        if (!link || !find || find.hasAttribute("data-saved")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        find.setAttribute("data-saved", "");
+        void act("/api/archive", new URLSearchParams({ cell: link.dataset.cell ?? "", action: "add" }), link);
+      },
+      true,
+    );
+
+    // First look at the map on a phone: start on the plot rather than the
+    // empty corner of grass, and say once that it moves.
+    const panHint = document.getElementById("pan-hint");
+    const HINT_KEY = "dig-pan-hint-seen";
+    function hidePanHint(): void {
+      if (!panHint || panHint.hidden) return;
+      panHint.hidden = true;
+      try {
+        localStorage.setItem(HINT_KEY, "1");
+      } catch {}
+    }
+    const viewport = document.getElementById("dig-viewport");
+    // Only a field that actually scrolls is a map: on desktop it's
+    // overflow: hidden and the drawing's overhang must not count.
+    const overflows = (): boolean => {
+      if (!field) return false;
+      const cs = getComputedStyle(field);
+      const scrolls = (v: string): boolean => v === "auto" || v === "scroll";
+      return (
+        (scrolls(cs.overflowX) && field.scrollWidth > field.clientWidth + 1) ||
+        (scrolls(cs.overflowY) && field.scrollHeight > field.clientHeight + 1)
+      );
+    };
+    function updateEdges(): void {
+      if (!field || !viewport) return;
+      const maxX = field.scrollWidth - field.clientWidth;
+      const maxY = field.scrollHeight - field.clientHeight;
+      viewport.classList.toggle("pannable", overflows());
+      viewport.classList.toggle("more-left", field.scrollLeft > 4);
+      viewport.classList.toggle("more-right", field.scrollLeft < maxX - 4);
+      viewport.classList.toggle("more-up", field.scrollTop > 4);
+      viewport.classList.toggle("more-down", field.scrollTop < maxY - 4);
+    }
+    function centreField(): void {
+      if (!field) return;
+      updateEdges();
+      if (!overflows()) return;
+      const grid = document.getElementById("dig-grid");
+      const g = grid?.getBoundingClientRect();
+      const f = field.getBoundingClientRect();
+      if (g) {
+        // Aim at the middle of the plot itself, which sits right of centre
+        // in the drawing, not the middle of the whole stage.
+        field.scrollLeft += g.left + g.width / 2 - (f.left + f.width / 2);
+        field.scrollTop += g.top + g.height / 2 - (f.top + f.height / 2);
+      }
+      updateEdges();
+      let seen = false;
+      try {
+        seen = localStorage.getItem(HINT_KEY) === "1";
+      } catch {}
+      if (panHint && !seen) panHint.hidden = false;
+    }
+    field?.addEventListener("scroll", updateEdges, { passive: true });
+    centreField();
+    window.addEventListener("resize", updateEdges);
 
     // Cap the evidence picks: once the limit is reached, the rest disable.
     document.addEventListener("change", (e) => {
@@ -697,9 +930,10 @@ const edges = (row: number, col: number): string | undefined => {
 
     // The live headcount: pushed as its own event because the count itself
     // is the payload, unlike "changed" which is just a cue to re-fetch.
-    const hereEl = document.getElementById("here-count");
     events.addEventListener("here", (e) => {
       const count = Number((e as MessageEvent).data);
+      // looked up each time: a new site swaps the header the count lives in
+      const hereEl = document.getElementById("here-count");
       if (!hereEl || Number.isNaN(count)) return;
       hereEl.dataset.here = String(count);
       const strong = hereEl.querySelector("strong");
