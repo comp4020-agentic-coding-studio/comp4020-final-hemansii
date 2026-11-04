@@ -22,3 +22,31 @@ export function subscribe(onChange: () => void): () => void {
   bus.on(TOPIC, onChange);
   return () => bus.off(TOPIC, onChange);
 }
+
+// How many tabs currently hold an open /api/events connection: a rough
+// stand-in for "people here right now", good enough for a number on the
+// page rather than an attendance record. One person with two tabs open
+// counts twice, and a dropped connection takes until the browser notices
+// (or the next ping) to leave; neither is worth a cookie-keyed presence
+// table for what's a vibe, not a claim the UI enforces.
+let liveCount = 0;
+const PRESENCE_TOPIC = "presence";
+
+export function currentlyHere(): number {
+  return liveCount;
+}
+
+export function presenceJoin(): void {
+  liveCount += 1;
+  bus.emit(PRESENCE_TOPIC, liveCount);
+}
+
+export function presenceLeave(): void {
+  liveCount = Math.max(0, liveCount - 1);
+  bus.emit(PRESENCE_TOPIC, liveCount);
+}
+
+export function subscribePresence(onCount: (count: number) => void): () => void {
+  bus.on(PRESENCE_TOPIC, onCount);
+  return () => bus.off(PRESENCE_TOPIC, onCount);
+}

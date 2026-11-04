@@ -10,8 +10,10 @@ import { getOrCreateVisitor } from "../lib/visitor";
 import { recentActivity } from "../lib/activity";
 import { nextDigCost } from "../lib/shop";
 import { questionFor, triviaStatus } from "../lib/trivia";
+import { currentlyHere } from "../lib/events";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
+const here = currentlyHere();
 const { id: siteId, site, number } = openSite();
 const past = closedSites(5);
 const lastDig = past[0];
@@ -107,6 +109,10 @@ const edges = (row: number, col: number): string | undefined => {
             Buy a dig for {digCost} 💎
           </button>
         </form>
+      </li>
+      <li class="here-now" id="here-count" data-here={here}>
+        <span class="here-dot" aria-hidden="true"></span>
+        <strong>{here}</strong> <span id="here-word">{here === 1 ? "person" : "people"}</span> digging right now
       </li>
     </ul>
   </div>
@@ -687,6 +693,19 @@ const edges = (row: number, col: number): string | undefined => {
     events.addEventListener("open", () => {
       if (connectedBefore) scheduleResync();
       connectedBefore = true;
+    });
+
+    // The live headcount: pushed as its own event because the count itself
+    // is the payload, unlike "changed" which is just a cue to re-fetch.
+    const hereEl = document.getElementById("here-count");
+    events.addEventListener("here", (e) => {
+      const count = Number((e as MessageEvent).data);
+      if (!hereEl || Number.isNaN(count)) return;
+      hereEl.dataset.here = String(count);
+      const strong = hereEl.querySelector("strong");
+      if (strong) strong.textContent = String(count);
+      const word = hereEl.querySelector("#here-word");
+      if (word) word.textContent = count === 1 ? "person" : "people";
     });
   </script>
 </Layout>

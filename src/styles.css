@@ -259,6 +259,27 @@ main > p {
   text-decoration: underline;
 }
 
+/* A small live signal: other people are in the dig right now, not just a
+   number that happens to be above zero. The dot's pulse is what reads as
+   "live"; a static dot would read the same as any other bullet. */
+.here-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #4a8f3c;
+  box-shadow: 0 0 0 rgba(74, 143, 60, 0.5);
+  animation: here-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes here-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 143, 60, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(74, 143, 60, 0);
+  }
+}
+
 .status strong {
   font-family: var(--font-ui);
   font-weight: 700;
@@ -1850,7 +1871,8 @@ a.cell.live-arrived::before {
   button.cell.dusty.live-arrived::before,
   button.cell.dusty.live-arrived::after,
   a.cell.live-arrived,
-  a.cell.live-arrived::before {
+  a.cell.live-arrived::before,
+  .here-dot {
     animation: none;
   }
 }
