@@ -4646,3 +4646,26 @@ a.specimen-tag:hover {
   box-shadow: inset 0 0 0 0.5px rgba(70, 100, 28, 0.3);
   filter: none;
 }
+
+/* Tapped and waiting on the server: shows the tap landed straight away, so
+   a slow link doesn't read as a missed tap worth repeating. */
+.iso-stage .cell[data-pending] {
+  cursor: progress;
+  animation: tile-pending 0.9s ease-in-out infinite;
+}
+
+@keyframes tile-pending {
+  0%, 100% {
+    box-shadow: inset 0 0 0 2px rgba(250, 243, 226, 0.55);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px rgba(250, 243, 226, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iso-stage .cell[data-pending] {
+    animation: none;
+    box-shadow: inset 0 0 0 3px rgba(250, 243, 226, 0.9);
+  }
+}

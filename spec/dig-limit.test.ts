@@ -22,6 +22,23 @@ it("each visitor gets 5 digs a day; the 6th is refused and digs nothing", async 
   expect(tile?.hasAttribute("data-spent")).toBe(true);
 });
 
+// Not one after the other, but all at once: the top band of the brief is
+// two people acting in the same instant. The check and the write share one
+// transaction (src/lib/dig.ts), so however the requests interleave exactly
+// one wins; split them apart and every racer wins (scripts/stress.ts shows
+// it, 30 rows for one cell).
+it("ten visitors digging the same section at once: exactly one wins", async () => {
+  const racers = Array.from({ length: 10 }, () => new TestVisitor(baseUrl));
+  await Promise.all(racers.map((r) => r.page()));
+  const [cell] = buriedCells((await racers[0].page()).doc);
+  expect(cell, NOTHING_LEFT).toBeDefined();
+
+  const results = await Promise.all(racers.map((r) => r.dig(cell)));
+  expect(results.filter((r) => r === "ok")).toHaveLength(1);
+  expect(results.filter((r) => r === "already-dug")).toHaveLength(9);
+  expect(stateOf((await new TestVisitor(baseUrl).page()).doc, cell)).toBe("dusty");
+});
+
 it("a section someone already uncovered can't be dug again", async () => {
   const first = new TestVisitor(baseUrl);
   const [cell] = buriedCells((await first.page()).doc);

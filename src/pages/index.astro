@@ -740,6 +740,29 @@ const edges = (row: number, col: number): string | undefined => {
     // small + is hidden. A find already in the tray opens its detail page.
     const coarse = window.matchMedia("(pointer: coarse)");
 
+    // On a slow link a dig takes a couple of seconds to come back, and with
+    // nothing changing on screen a second tap looks like the obvious fix. The
+    // server already refuses the duplicate, but the player then reads "Someone
+    // got to that section first" about their own dig. So a tile shows it's
+    // working the moment it's tapped, and takes no more taps until its reply
+    // lands. Keyed by cell, so a different tile can still be tapped meanwhile.
+    const inFlight = new Set<string>();
+    function markPending(cell: string, on: boolean): void {
+      document.getElementById(`cell-${cell}`)?.toggleAttribute("data-pending", on);
+    }
+    async function actOnce(cell: string, action: string, body: URLSearchParams, near?: Element): Promise<void> {
+      if (inFlight.has(cell)) return;
+      inFlight.add(cell);
+      markPending(cell, true);
+      try {
+        await act(action, body, near);
+      } finally {
+        inFlight.delete(cell);
+        // the resync usually swapped the tile for a fresh one already
+        markPending(cell, false);
+      }
+    }
+
     document.addEventListener("submit", (e) => {
       const form = e.target as HTMLFormElement;
       const submitter = e.submitter as HTMLButtonElement | null;
@@ -755,6 +778,11 @@ const edges = (row: number, col: number): string | undefined => {
       // all survive
       const body = new URLSearchParams([...new FormData(form, submitter)].map(([k, v]) => [k, String(v)]));
       if (form.querySelector("[name=body]")) form.reset();
+      const cell = body.get("cell");
+      if (cell && (action === "/api/dig" || action === "/api/brush" || action === "/api/archive")) {
+        void actOnce(cell, action, body, submitter ?? undefined);
+        return;
+      }
       void act(action, body, submitter ?? undefined);
     });
 
@@ -819,7 +847,8 @@ const edges = (row: number, col: number): string | undefined => {
         e.preventDefault();
         e.stopPropagation();
         find.setAttribute("data-saved", "");
-        void act("/api/archive", new URLSearchParams({ cell: link.dataset.cell ?? "", action: "add" }), link);
+        const cell = link.dataset.cell ?? "";
+        void actOnce(cell, "/api/archive", new URLSearchParams({ cell, action: "add" }), link);
       },
       true,
     );
