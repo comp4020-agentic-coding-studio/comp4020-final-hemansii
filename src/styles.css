@@ -5375,3 +5375,76 @@ a.specimen-tag:hover {
     min-height: 14.5rem;
   }
 }
+
+/* ---------- Why a dig can't be bought, shown at once ----------
+   A native title tooltip waits a second or more before it appears, so a
+   faded Buy button seemed to do nothing when hovered. The reason is now a
+   small note that shows the moment the pointer is over it (or it has
+   keyboard focus), hanging just under the button. */
+.buy-dig[data-blocked] {
+  position: relative;
+}
+
+.buy-dig[data-blocked] button {
+  /* the slot shows the note; the button itself takes no pointer, so the
+     hover lands on the slot in every browser */
+  pointer-events: none;
+}
+
+.buy-dig[data-blocked]:focus-visible {
+  outline: 2px solid var(--gold-dark);
+  outline-offset: 2px;
+}
+
+.buy-why {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  max-width: 16rem;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  color: var(--paper-hi);
+  background: var(--ink);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(21, 18, 13, 0.25);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.buy-dig[data-blocked]:hover .buy-why,
+.buy-dig[data-blocked]:focus-visible .buy-why {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* On a phone there's no hover, and the slot is a full-width row, so the
+   reason is simply shown under the button. */
+@media (max-width: 40rem) {
+  .buy-dig[data-blocked] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .buy-why {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin-top: 0.35rem;
+    padding: 0;
+    font-size: 0.78rem;
+    text-align: center;
+    color: var(--ink-soft);
+    background: none;
+    box-shadow: none;
+    visibility: visible;
+    opacity: 1;
+  }
+}

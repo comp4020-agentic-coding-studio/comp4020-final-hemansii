@@ -144,20 +144,22 @@ const edges = (row: number, col: number): string | undefined => {
       <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
       <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
       {/* The button always names the action and its price. When it can't
-          be pressed, why not is its hover text and part of its accessible
-          name; the slot repeats it, since some browsers show no tooltip
-          for a disabled button. */}
-      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} title={buyBlocked ?? `Bonus dig costs ${digCost} shards. You have ${visitor.shards}.`}>
+          be pressed, why not shows the moment it's hovered: a native title
+          tooltip waits a second or more, which reads as nothing happening.
+          The slot takes the hover, not the button, since a disabled button
+          gets no pointer events in some browsers, and the reason is also
+          part of the button's accessible name. */}
+      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} data-blocked={buyBlocked ? "" : undefined} tabindex={buyBlocked ? 0 : undefined}>
         <form method="post" action="/api/shop">
           <button
             type="submit"
             disabled={buyBlocked !== null}
-            title={buyBlocked ?? undefined}
             aria-label={buyBlocked ? `Buy a dig for ${digCost} shards. ${buyBlocked}` : undefined}
           >
             Buy a dig for {digCost} 💎
           </button>
         </form>
+        {buyBlocked && <span class="buy-why" aria-hidden="true">{buyBlocked}</span>}
       </li>
       <li class="here-now" id="here-count" data-here={here}>
         <span class="here-dot" aria-hidden="true"></span>
