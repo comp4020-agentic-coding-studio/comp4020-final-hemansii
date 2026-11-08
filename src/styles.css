@@ -5375,3 +5375,15 @@ a.specimen-tag:hover {
     min-height: 14.5rem;
   }
 }
+
+/* ---------- Short of shards ----------
+   The disabled Buy button now reads "Need 5 more 💎", so it's styled as
+   a note to read rather than a faded red button that looks broken: paper
+   with a dashed edge, full-strength text, and still clearly not pressable. */
+.expedition-bar .status .buy-dig button:disabled {
+  opacity: 1;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px dashed rgba(74, 47, 29, 0.55);
+  box-shadow: none;
+}

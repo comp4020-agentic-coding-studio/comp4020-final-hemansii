@@ -53,6 +53,7 @@ const theories = listTheories(siteId);
 const activity = recentActivity(siteId, 14);
 const latestTheory = theories[0];
 const digCost = nextDigCost(visitor.id);
+const shardsShort = Math.max(0, digCost - visitor.shards);
 const trivia = triviaStatus(visitor.id);
 const question = questionFor();
 
@@ -134,10 +135,17 @@ const edges = (row: number, col: number): string | undefined => {
       <li class="stat" data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
       <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
       <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
-      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost}>
+      {/* A disabled "Buy a dig" didn't say why it couldn't be pressed, so
+          short of shards it says how many more are needed instead; the
+          full rule is on hover and in the accessible name. */}
+      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} title={`Bonus dig costs ${digCost} shards. You have ${visitor.shards}.`}>
         <form method="post" action="/api/shop">
-          <button type="submit" disabled={visitor.shards < digCost}>
-            Buy a dig for {digCost} 💎
+          <button
+            type="submit"
+            disabled={shardsShort > 0}
+            aria-label={shardsShort > 0 ? `Need ${shardsShort} more shards. A bonus dig costs ${digCost} shards and you have ${visitor.shards}.` : undefined}
+          >
+            {shardsShort > 0 ? `Need ${shardsShort} more 💎` : `Buy a dig for ${digCost} 💎`}
           </button>
         </form>
       </li>
