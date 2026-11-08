@@ -54,6 +54,14 @@ const activity = recentActivity(siteId, 14);
 const latestTheory = theories[0];
 const digCost = nextDigCost(visitor.id);
 const shardsShort = Math.max(0, digCost - visitor.shards);
+// Why a bonus dig can't be bought right now, if it can't. buyDig() on the
+// server still decides; this only explains it on the button.
+const buyBlocked =
+  left > 0
+    ? "Use your free digs before buying a bonus dig."
+    : shardsShort > 0
+      ? `You need ${shardsShort} more shards to buy this dig.`
+      : null;
 const trivia = triviaStatus(visitor.id);
 const question = questionFor();
 
@@ -135,17 +143,19 @@ const edges = (row: number, col: number): string | undefined => {
       <li class="stat" data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
       <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
       <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
-      {/* A disabled "Buy a dig" didn't say why it couldn't be pressed, so
-          short of shards it says how many more are needed, and for what;
-          the full rule is on hover and in the accessible name. */}
-      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} title={`Bonus dig costs ${digCost} shards. You have ${visitor.shards}.`}>
+      {/* The button always names the action and its price. When it can't
+          be pressed, why not is its hover text and part of its accessible
+          name; the slot repeats it, since some browsers show no tooltip
+          for a disabled button. */}
+      <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} title={buyBlocked ?? `Bonus dig costs ${digCost} shards. You have ${visitor.shards}.`}>
         <form method="post" action="/api/shop">
           <button
             type="submit"
-            disabled={shardsShort > 0}
-            aria-label={shardsShort > 0 ? `Need ${shardsShort} more shards. A bonus dig costs ${digCost} shards and you have ${visitor.shards}.` : undefined}
+            disabled={buyBlocked !== null}
+            title={buyBlocked ?? undefined}
+            aria-label={buyBlocked ? `Buy a dig for ${digCost} shards. ${buyBlocked}` : undefined}
           >
-            {shardsShort > 0 ? <>Need {shardsShort} more <span class="buy-gem">💎</span> to buy a dig</> : `Buy a dig for ${digCost} 💎`}
+            Buy a dig for {digCost} 💎
           </button>
         </form>
       </li>
