@@ -27,6 +27,10 @@ export const visitors = sqliteTable("visitors", {
   shards: int().notNull().default(0),
   triviaStreak: int("trivia_streak").notNull().default(0),
   lastTriviaDay: text("last_trivia_day"),
+  // What this visitor had seen when they last loaded the dig (src/lib/away.ts),
+  // so a return visit can say what happened while they were away. Null
+  // until their first visit after it was added: nothing to report.
+  lastSeenAt: text("last_seen_at"),
 });
 
 // Append-only: a section's state is derived from its digs, never stored on it,

@@ -11,10 +11,30 @@ import { recentActivity } from "../lib/activity";
 import { nextDigCost } from "../lib/shop";
 import { questionFor, triviaStatus } from "../lib/trivia";
 import { currentlyHere } from "../lib/events";
+import { markSeen, sinceLastVisit } from "../lib/away";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
 const here = currentlyHere();
 const { id: siteId, site, number } = openSite();
+// Read before marking this visit, or there'd never be a gap to report.
+// The live layer's own fetches of / carry a header saying so, since those
+// aren't the player coming back.
+const isResync = Astro.request.headers.get("x-dig-resync") === "1";
+const away = isNew || isResync ? null : sinceLastVisit(visitor.id, visitor.lastSeenAt, siteId);
+if (!isResync) markSeen(visitor.id);
+const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+const awayLines = away
+  ? [
+      away.uncovered > 0 &&
+        `${plural(away.uncovered, "section", "sections")} uncovered${away.diggers > 1 ? ` by ${away.diggers} diggers` : ""}`,
+      away.brushed > 0 && `${plural(away.brushed, "find", "finds")} brushed clean`,
+      away.theories > 0 && `${plural(away.theories, "new theory", "new theories")}`,
+      away.notes > 0 && `${plural(away.notes, "field note", "field notes")}`,
+    ].filter((line): line is string => Boolean(line))
+  : [];
+const awaySince = away
+  ? new Date(away.since).toLocaleString("en-AU", { timeZone: "Australia/Sydney", weekday: "short", hour: "numeric", minute: "2-digit" })
+  : "";
 const past = closedSites(5);
 const lastDig = past[0];
 const found = findings(siteId);
@@ -130,6 +150,28 @@ const edges = (row: number, col: number): string | undefined => {
           <button type="submit">Start digging as this name</button>
         </div>
       </form>
+    )
+  }
+
+  {
+    away && (
+      <section class="since-away" id="since-away" aria-labelledby="since-away-title">
+        <div class="since-away-text">
+          <h2 id="since-away-title">Since you last dug <span class="since-away-when">({awaySince})</span></h2>
+          {away.solved && (
+            <p class="since-away-solved" data-away-solved>
+              {away.solved.by ? <><strong>{away.solved.by}</strong> named the last site: {away.solved.title}.</> : <>The last site, {away.solved.title}, was brushed clean unsolved.</>}{" "}
+              A new one is buried.
+            </p>
+          )}
+          {awayLines.length > 0 && (
+            <ul class="since-away-list">
+              {awayLines.map((line) => <li>{line}</li>)}
+            </ul>
+          )}
+        </div>
+        <button type="button" class="since-away-close" id="since-away-close" aria-label="Dismiss what changed since your last visit">Got it</button>
+      </section>
     )
   }
 
@@ -596,7 +638,7 @@ const edges = (row: number, col: number): string | undefined => {
       if (html === undefined) {
         // a failed fetch (offline) leaves the board as it was; the stream
         // reopening resyncs again once there's a connection
-        const res = await fetch(location.pathname, { cache: "no-store" }).catch(() => null);
+        const res = await fetch(location.pathname, { cache: "no-store", headers: { "x-dig-resync": "1" } }).catch(() => null);
         if (!res?.ok) return;
         html = await res.text();
       }
@@ -1010,6 +1052,15 @@ const edges = (row: number, col: number): string | undefined => {
     // over, so that reads "offline" rather than "reconnecting". Its state
     // is derived again on each change rather than tracked as flags, since
     // "online" and "open" can arrive in either order.
+    // The return summary is read once and put away; it's built fresh on the
+    // next return, so there's nothing to remember about dismissing it.
+    document.getElementById("since-away-close")?.addEventListener("click", () => {
+      const panel = document.getElementById("since-away");
+      if (panel) panel.hidden = true;
+      // a full-height desktop layout has room for the board again
+      centreField();
+    });
+
     const liveBanner = document.getElementById("live-banner");
     let lastCount = Number(document.getElementById("here-count")?.dataset.here ?? 0);
     let liveState: "live" | "reconnecting" | "offline" = "live";

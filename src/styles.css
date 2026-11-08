@@ -5003,3 +5003,123 @@ a.specimen-tag:hover {
 .live-banner[data-live="live"]::before {
   background: var(--green);
 }
+
+/* ---------- Since you last dug ---------- */
+
+/* A returning player's catch-up: one slim strip above the board, in the
+   same paper-and-ink as the rename banner, so on desktop it costs a line
+   of height rather than pushing the board off the one screen. */
+.since-away {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.6rem 0;
+  padding: 0.5rem 0.6rem 0.5rem 0.9rem;
+  background: var(--paper-hi);
+  border: 1.5px solid var(--line-ink, var(--ink));
+  border-left: 5px solid var(--olive);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.since-away[hidden] {
+  display: none;
+}
+
+.since-away-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.9rem;
+}
+
+.since-away h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.since-away-when {
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.since-away-solved {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+}
+
+.since-away-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.since-away-list li + li::before {
+  content: "\00b7";
+  margin: 0 0.5rem;
+  color: var(--ink-soft);
+}
+
+.since-away-close {
+  flex: none;
+  padding: 0.35rem 0.8rem;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--line-ink, var(--ink));
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.since-away-close:hover {
+  background: #fffaf0;
+}
+
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen .since-away {
+    flex: none;
+    margin: 0.45rem 0 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .since-away {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .since-away-list {
+    flex-direction: column;
+  }
+
+  .since-away-list li::before,
+  .since-away-list li + li::before {
+    content: "\2022";
+    margin: 0 0.45rem 0 0;
+    color: var(--olive);
+  }
+
+  .since-away-close {
+    align-self: stretch;
+    min-height: 2.5rem;
+  }
+}

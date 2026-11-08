@@ -1,0 +1,1 @@
+ALTER TABLE `visitors` ADD `last_seen_at` text;
