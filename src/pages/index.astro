@@ -51,6 +51,7 @@ const MESSAGES: Record<string, string> = {
   "trivia-correct": "Correct! Shards earned, come back tomorrow for another streak day.",
   "trivia-wrong": "Not quite. Come back tomorrow for a fresh question.",
   "trivia-already-answered": "Already answered today's question.",
+  "no-connection": "Couldn't reach the dig. Check your connection and try again.",
 };
 const flash = MESSAGES[Astro.url.searchParams.get("r") ?? ""];
 
@@ -113,7 +114,7 @@ const edges = (row: number, col: number): string | undefined => {
       </li>
       <li class="here-now" id="here-count" data-here={here}>
         <span class="here-dot" aria-hidden="true"></span>
-        <strong>{here}</strong> <span id="here-word">{here === 1 ? "person" : "people"}</span> digging right now
+        <strong>{here}</strong> <span id="here-word">{here === 1 ? "person" : "people"}</span><span id="here-tail"> digging right now</span>
       </li>
     </ul>
   </div>
@@ -146,6 +147,7 @@ const edges = (row: number, col: number): string | undefined => {
     </div>
   </div>
   <div class="notices" id="notices" aria-live="polite" aria-label="New from other players"></div>
+  <p class="live-banner" id="live-banner" role="status" hidden></p>
   <script type="application/json" id="flash-messages" set:html={JSON.stringify(MESSAGES)} />
 
   <form method="post" action="/api/dig" id="dig-form" class="visually-hidden" aria-hidden="true"></form>
@@ -592,8 +594,10 @@ const edges = (row: number, col: number): string | undefined => {
     // reloads and the scroll position never moves.
     async function resync(html?: string): Promise<void> {
       if (html === undefined) {
-        const res = await fetch(location.pathname, { cache: "no-store" });
-        if (!res.ok) return;
+        // a failed fetch (offline) leaves the board as it was; the stream
+        // reopening resyncs again once there's a connection
+        const res = await fetch(location.pathname, { cache: "no-store" }).catch(() => null);
+        if (!res?.ok) return;
         html = await res.text();
       }
       const fresh = new DOMParser().parseFromString(html, "text/html");
@@ -620,6 +624,7 @@ const edges = (row: number, col: number): string | undefined => {
           if (next) document.querySelector(sel)?.replaceWith(next);
         }
         if (here) document.getElementById("here-count")?.replaceWith(here);
+        renderHere();
         document.querySelectorAll('input[name="field-tab"]').forEach((r) => r.addEventListener("change", renderBadges));
         unread.notes = unread.theories = 0;
         wireDragHandles();
@@ -705,11 +710,19 @@ const edges = (row: number, col: number): string | undefined => {
     renderHowTo();
 
     async function act(action: string, body: URLSearchParams, near?: Element): Promise<void> {
-      const res = await fetch(action, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body,
-      });
+      let res: Response;
+      try {
+        res = await fetch(action, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body,
+        });
+      } catch {
+        // No connection at all: nothing reached the server, so say that
+        // rather than leaving the tap to look ignored.
+        showFlash("no-connection");
+        return;
+      }
       const landed = new URL(res.url);
       const result = landed.searchParams.get("r");
       await resync(res.ok && landed.pathname === location.pathname ? await res.text() : undefined);
@@ -989,26 +1002,118 @@ const edges = (row: number, col: number): string | undefined => {
     // tab within about a second. A reconnect after a dropped connection
     // resyncs too, to catch the visitor up on what they missed; the first
     // connect doesn't, since the page has only just rendered.
-    const events = new EventSource("/api/events");
-    events.addEventListener("message", scheduleResync);
-    let connectedBefore = false;
-    events.addEventListener("open", () => {
-      if (connectedBefore) scheduleResync();
-      connectedBefore = true;
-    });
+    //
+    // A dropped stream used to be invisible: the board just stopped moving
+    // and still looked live. Now the headcount and a small banner say so.
+    // EventSource retries on its own (the server asks for every 2s), and
+    // while the browser reports no network at all there's nothing to retry
+    // over, so that reads "offline" rather than "reconnecting". Its state
+    // is derived again on each change rather than tracked as flags, since
+    // "online" and "open" can arrive in either order.
+    const liveBanner = document.getElementById("live-banner");
+    let lastCount = Number(document.getElementById("here-count")?.dataset.here ?? 0);
+    let liveState: "live" | "reconnecting" | "offline" = "live";
+    let liveTimer: ReturnType<typeof setTimeout> | undefined;
 
-    // The live headcount: pushed as its own event because the count itself
-    // is the payload, unlike "changed" which is just a cue to re-fetch.
-    events.addEventListener("here", (e) => {
-      const count = Number((e as MessageEvent).data);
+    function renderHere(): void {
       // looked up each time: a new site swaps the header the count lives in
       const hereEl = document.getElementById("here-count");
-      if (!hereEl || Number.isNaN(count)) return;
-      hereEl.dataset.here = String(count);
+      if (!hereEl) return;
+      hereEl.dataset.live = liveState;
+      hereEl.dataset.here = String(lastCount);
       const strong = hereEl.querySelector("strong");
-      if (strong) strong.textContent = String(count);
       const word = hereEl.querySelector("#here-word");
-      if (word) word.textContent = count === 1 ? "person" : "people";
+      const tail = hereEl.querySelector<HTMLElement>("#here-tail");
+      // Off the live stream the count is stale, so it isn't shown as a fact.
+      if (strong) strong.textContent = liveState === "live" ? String(lastCount) : "";
+      if (tail) tail.hidden = liveState !== "live";
+      if (word) {
+        word.textContent =
+          liveState === "offline"
+            ? "Offline, showing the board as you last saw it"
+            : liveState === "reconnecting"
+              ? "Reconnecting to the dig…"
+              : lastCount === 1
+                ? "person"
+                : "people";
+      }
+    }
+
+    function setLive(next: typeof liveState): void {
+      if (next === liveState) return;
+      const was = liveState;
+      liveState = next;
+      renderHere();
+      if (!liveBanner) return;
+      clearTimeout(liveTimer);
+      if (next === "live") {
+        // only worth saying if it was ever said to be down
+        if (liveBanner.hidden) return;
+        liveBanner.dataset.live = "live";
+        liveBanner.textContent = "Back online. The dig is up to date.";
+        liveTimer = setTimeout(() => (liveBanner.hidden = true), 2500);
+        return;
+      }
+      liveBanner.dataset.live = next;
+      // the header wraps to two rows on a phone, so measure where it ends
+      const header = document.querySelector(".site-header")?.getBoundingClientRect();
+      if (header) liveBanner.style.setProperty("--header-h", `${Math.max(0, header.bottom)}px`);
+      liveBanner.textContent =
+        next === "offline"
+          ? "You're offline. Digs and notes will need a connection."
+          : "Lost the live connection. Reconnecting…";
+      // A blip shorter than this (a phone waking, a proxy recycling the
+      // stream) isn't worth flashing a banner over; the headcount already
+      // shows it. Going offline is said straight away.
+      if (next === "offline" || was === "offline") liveBanner.hidden = false;
+      else liveTimer = setTimeout(() => (liveBanner.hidden = false), 1500);
+    }
+
+    let events: EventSource;
+    let connectedBefore = false;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+
+    // The browser retries a dropped stream by itself, but gives up for good
+    // on an error response (a 502 from the proxy mid-deploy, say), so a
+    // closed stream is reopened here, a little later each time.
+    let backoff = 2000;
+    function connect(): void {
+      clearTimeout(retry);
+      events = new EventSource("/api/events");
+      events.addEventListener("message", scheduleResync);
+      events.addEventListener("open", () => {
+        if (connectedBefore) scheduleResync();
+        connectedBefore = true;
+        backoff = 2000;
+        setLive("live");
+      });
+      events.addEventListener("error", () => {
+        setLive(navigator.onLine ? "reconnecting" : "offline");
+        if (events.readyState !== EventSource.CLOSED) return;
+        retry = setTimeout(connect, backoff);
+        backoff = Math.min(backoff * 2, 30_000);
+      });
+      // The live headcount: pushed as its own event because the count itself
+      // is the payload, unlike "changed" which is just a cue to re-fetch.
+      events.addEventListener("here", (e) => {
+        const count = Number((e as MessageEvent).data);
+        if (Number.isNaN(count)) return;
+        lastCount = count;
+        setLive("live");
+        renderHere();
+      });
+    }
+    connect();
+
+    window.addEventListener("offline", () => setLive("offline"));
+    window.addEventListener("online", () => {
+      if (events.readyState === EventSource.OPEN) return setLive("live");
+      setLive("reconnecting");
+      // don't wait out the backoff once the network is back
+      if (events.readyState === EventSource.CLOSED) {
+        backoff = 2000;
+        connect();
+      }
     });
   </script>
 </Layout>

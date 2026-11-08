@@ -4923,3 +4923,83 @@ a.specimen-tag:hover {
     animation: none;
   }
 }
+
+/* ---------- Live connection state ---------- */
+
+/* The headcount doubles as the live signal, so when the stream drops it
+   says so: an amber dot that stops pulsing, then a grey one offline. */
+.here-now[data-live="reconnecting"] .here-dot {
+  background: var(--gold-dark);
+  animation: none;
+}
+
+.here-now[data-live="offline"] .here-dot {
+  background: #8a7f72;
+  animation: none;
+}
+
+.here-now[data-live="reconnecting"],
+.here-now[data-live="offline"] {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Pinned near the top of the screen, clear of the toast at the bottom and
+   the notices in the corner, since it describes the whole page. It sits
+   inside main, whose stacking context is below the sticky header's, so it
+   hangs just under the header rather than over it. */
+.live-banner {
+  position: fixed;
+  top: calc(var(--header-h, 3rem) + 0.6rem);
+  left: 50%;
+  z-index: 30;
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 30rem);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.5rem 0.95rem 0.5rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  background: var(--paper-hi);
+  border: 1.5px solid var(--line-ink, var(--ink));
+  border-left: 5px solid var(--gold-dark);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  animation: toast-in 220ms ease-out;
+}
+
+.live-banner[hidden] {
+  display: none;
+}
+
+.live-banner::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--gold-dark);
+}
+
+.live-banner[data-live="offline"] {
+  border-left-color: #8a7f72;
+}
+
+.live-banner[data-live="offline"]::before {
+  background: #8a7f72;
+}
+
+.live-banner[data-live="live"] {
+  border-left-color: var(--green);
+}
+
+.live-banner[data-live="live"]::before {
+  background: var(--green);
+}
