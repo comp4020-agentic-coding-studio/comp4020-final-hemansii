@@ -5149,3 +5149,135 @@ a.specimen-tag:hover {
   color: var(--ink);
   font-weight: 600;
 }
+
+/* ---------- The tally strip, given room ----------
+   On desktop the strip's cells had no vertical padding and a line-height
+   of 1, so the whole bar was one line of small text tall (18px), reading
+   as a table row rather than the game's own readout. Each cell now has a
+   floor of 3rem (the bar lands near 50px with its border), the count is
+   set larger than its label so it scans first, and the dashed rules
+   between cells stay, so it's still the expedition tally, not a row of
+   cards. Phone keeps its own stacked card (above). */
+@media (min-width: 40.0625rem) {
+  .expedition-bar .status {
+    align-items: stretch;
+  }
+
+  .expedition-bar .status li,
+  .expedition-bar .status li:nth-child(even) {
+    min-height: 3rem;
+    padding: 0.45rem 1.05rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .expedition-bar .status strong {
+    font-size: 1.15rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* the name is a label too, just a bigger one: keep it the size of the
+     counts rather than louder than them */
+  .expedition-bar .status .whoami strong {
+    font-size: 1.05rem;
+  }
+
+  .expedition-bar .status .here-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+  }
+
+  .expedition-bar .status .buy-dig {
+    padding-block: 0.35rem;
+  }
+}
+
+/* ---------- What a tab is for, before the box to write in ----------
+   The empty-state guidance used to be a centred column under the form,
+   below the fold at a normal desktop height. It's now one compact row at
+   the top of the panel: a small illustration and a line of text, then the
+   form straight under it. */
+.field-pane .feed-empty {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  text-align: left;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.field-pane .feed-empty .empty-art {
+  width: 2.4rem;
+}
+
+.field-pane .feed-empty .empty-art[src$="flag.webp"] {
+  width: 1.35rem;
+}
+
+/* The evidence rule is what makes a theory count, so its line is read,
+   not squinted at. */
+.field-pane .evidence-none {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+/* ---------- The open tab gets the room ----------
+   In the one-screen layout the open panel and the dig log both grew
+   (flex 1 1 auto) and split the leftover height evenly, so once a list
+   existed the tab the player was actually reading got the same ~220px as
+   the ledger under the trivia card, and its notes or theories were cut
+   off a line or two in. Both start from zero (an auto basis starts each at
+   its full content height, and the overflow is then shared in proportion
+   to size, whatever the grow factors say), and the open panel takes three
+   shares of what's left to the log's one. Each keeps its own floor. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen #tab-tray:checked ~ #tray,
+  .fit-screen #tab-notes:checked ~ #notes,
+  .fit-screen #tab-theories:checked ~ #theories {
+    flex: 3 1 0;
+  }
+
+  .fit-screen .dig-log:not(.trivia-card):not(.past-digs) {
+    flex: 1 1 0;
+  }
+}
+
+/* A long chosen name shortens with an ellipsis rather than pushing the
+   presence count onto a second row of the tally strip. */
+@media (min-width: 40.0625rem) {
+  .expedition-bar .status .whoami {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .expedition-bar .status .whoami details,
+  .expedition-bar .status .whoami summary {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .expedition-bar .status .whoami summary {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .expedition-bar .status .whoami strong {
+    min-width: 0;
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .expedition-bar .status > li:not(.whoami) {
+    flex: none;
+    white-space: nowrap;
+  }
+}

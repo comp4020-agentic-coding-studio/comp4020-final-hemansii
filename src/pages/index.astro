@@ -120,7 +120,7 @@ const edges = (row: number, col: number): string | undefined => {
     <ul class="status" aria-live="polite">
       <li class="whoami">
         <details>
-          <summary>You are <strong>{visitor.name}</strong> <span class="whoami-edit">change</span></summary>
+          <summary>You are <strong title={visitor.name}>{visitor.name}</strong> <span class="whoami-edit">change</span></summary>
           <form method="post" action="/api/visitor" class="rename-inline">
             <label for="rename-inline" class="visually-hidden">Your name on the dig</label>
             <input id="rename-inline" name="name" maxlength="40" value={visitor.name} autocomplete="off" />
@@ -390,20 +390,25 @@ const edges = (row: number, col: number): string | undefined => {
 
       <section class="panel tab-panel" id="notes" aria-labelledby="notes-heading">
         <h2 id="notes-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z"/></svg> Field notes</h2>
+        {/* What the tab is for comes before the box to write in, not after
+            it where nobody scrolls. It's swapped by the live layer with the
+            rest of the panel's state, so it goes once the first note lands. */}
+        <div id="notes-intro">
+          {
+            notes.length === 0 && (
+              <p class="feed-empty">
+                <img class="empty-art" src="/props/field-notebook.webp" alt="" width="64" height="51" />
+                <span>No notes yet. Tell the others where to dig or what you spotted.</span>
+              </p>
+            )
+          }
+        </div>
         <form method="post" action="/api/notes" class="feed-form">
           <label for="note-body" class="visually-hidden">Leave a field note</label>
           <textarea id="note-body" name="body" maxlength="300" rows="2" placeholder="The text in row 4 looks like a sidebar, try next to it…" required></textarea>
           <button type="submit">Post note</button>
         </form>
         <ul class="feed" id="notes-list">
-          {
-            notes.length === 0 && (
-              <li class="feed-empty">
-                <img class="empty-art" src="/props/field-notebook.webp" alt="" width="64" height="51" />
-                No notes yet. Tell the others where to dig or what you spotted.
-              </li>
-            )
-          }
           {notes.map((n) => (
             <li class="feed-item note-item" data-id={n.id} data-author={n.author} data-mine={n.authorId === visitor.id ? "" : undefined}>
               <p>{n.body}</p>
@@ -415,6 +420,16 @@ const edges = (row: number, col: number): string | undefined => {
 
       <section class="panel tab-panel" id="theories" aria-labelledby="theories-heading">
         <h2 id="theories-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg> Theories</h2>
+        <div id="theories-intro">
+          {
+            theories.length === 0 && (
+              <p class="feed-empty">
+                <img class="empty-art" src="/props/flag.webp" alt="" width="34" height="52" />
+                <span>No theories yet. Name the buried site here, and cite a find from your tray to solve it.</span>
+              </p>
+            )
+          }
+        </div>
         <form method="post" action="/api/theories" class="feed-form theory-form">
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
           <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this was…" required></textarea>
@@ -431,14 +446,6 @@ const edges = (row: number, col: number): string | undefined => {
           <button type="submit">Post theory</button>
         </form>
         <ul class="feed" id="theories-list">
-          {
-            theories.length === 0 && (
-              <li class="feed-empty">
-                <img class="empty-art" src="/props/flag.webp" alt="" width="34" height="52" />
-                No theories yet. Which website was this?
-              </li>
-            )
-          }
           {theories.map((t) => (
             <li class="feed-item theory-item" data-id={t.id} data-author={t.author} data-mine={t.authorId === visitor.id ? "" : undefined}>
               <p>{t.body}</p>
@@ -529,7 +536,9 @@ const edges = (row: number, col: number): string | undefined => {
     const LIVE_IDS = [
       "dig-grid",
       "notes-list",
+      "notes-intro",
       "theories-list",
+      "theories-intro",
       "dig-log-list",
       "mystery-latest",
       "tray-contents",
@@ -1120,7 +1129,7 @@ const edges = (row: number, col: number): string | undefined => {
       if (word) {
         word.textContent =
           liveState === "offline"
-            ? "Offline, showing the board as you last saw it"
+            ? "Offline, board as last seen"
             : liveState === "reconnecting"
               ? "Reconnecting to the dig…"
               : lastCount === 1
