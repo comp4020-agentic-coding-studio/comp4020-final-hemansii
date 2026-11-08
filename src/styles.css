@@ -5387,3 +5387,9 @@ a.specimen-tag:hover {
   border: 1.5px dashed rgba(74, 47, 29, 0.55);
   box-shadow: none;
 }
+
+/* The emoji glyph sits tight against the next word at this size, so it
+   gets a little room of its own, or "💎 to" reads as "💎to". */
+.buy-gem {
+  margin-right: 0.2em;
+}

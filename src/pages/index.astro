@@ -136,8 +136,8 @@ const edges = (row: number, col: number): string | undefined => {
       <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
       <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
       {/* A disabled "Buy a dig" didn't say why it couldn't be pressed, so
-          short of shards it says how many more are needed instead; the
-          full rule is on hover and in the accessible name. */}
+          short of shards it says how many more are needed, and for what;
+          the full rule is on hover and in the accessible name. */}
       <li class="buy-dig" id="buy-dig-slot" hidden={left > 0} data-cost={digCost} title={`Bonus dig costs ${digCost} shards. You have ${visitor.shards}.`}>
         <form method="post" action="/api/shop">
           <button
@@ -145,7 +145,7 @@ const edges = (row: number, col: number): string | undefined => {
             disabled={shardsShort > 0}
             aria-label={shardsShort > 0 ? `Need ${shardsShort} more shards. A bonus dig costs ${digCost} shards and you have ${visitor.shards}.` : undefined}
           >
-            {shardsShort > 0 ? `Need ${shardsShort} more 💎` : `Buy a dig for ${digCost} 💎`}
+            {shardsShort > 0 ? <>Need {shardsShort} more <span class="buy-gem">💎</span> to buy a dig</> : `Buy a dig for ${digCost} 💎`}
           </button>
         </form>
       </li>
