@@ -28,18 +28,30 @@ const brushedWhen = new Date(finding.brushedAt).toLocaleString("en-AU", {
 
 <Layout title={`Section ${row + 1}·${col + 1}, The Dig`}>
   <p><a href={`/#cell-${key}`} data-back-to-dig>← Back to the dig</a></p>
-  <article class="note-card deckle-edge">
-    <Stamp>Specimen {gridRef(row, col)}</Stamp>
-    <h1>Row {row + 1}, column {col + 1}</h1>
+  <article class="note-card">
+    <header class="note-card-head">
+      <Stamp>Specimen {gridRef(row, col)}</Stamp>
+      <h1>Row {row + 1}, column {col + 1}</h1>
+    </header>
     <div class="fragment" set:html={cell.html} />
-    <h2>Field note</h2>
-    <p>{cell.note}</p>
-    <p data-finder>Uncovered by <strong>{finding.finder}</strong> on {when}.</p>
-    {
-      finding.brusher && (
-        <p data-brusher>Brushed clean by <strong>{finding.brusher}</strong> on {brushedWhen}.</p>
-      )
-    }
+    <section class="note-card-note" aria-labelledby="field-note-heading">
+      <h2 id="field-note-heading">Field note</h2>
+      <p>{cell.note}</p>
+    </section>
+    <dl class="note-card-record">
+      <div data-finder>
+        <dt>Uncovered by</dt>
+        <dd><strong>{finding.finder}</strong> <span class="note-card-when">{when}</span></dd>
+      </div>
+      {
+        finding.brusher && (
+          <div data-brusher>
+            <dt>Brushed clean by</dt>
+            <dd><strong>{finding.brusher}</strong> <span class="note-card-when">{brushedWhen}</span></dd>
+          </div>
+        )
+      }
+    </dl>
   </article>
   <script>
     // Coming from the dig, going back in history returns to the exact scroll

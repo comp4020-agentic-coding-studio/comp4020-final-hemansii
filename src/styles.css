@@ -709,7 +709,6 @@ main > p {
   border: var(--line) solid var(--ink);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
-  animation: grid-settle 420ms ease-out;
 }
 
 /* The grass line marks the one real surface, right where the excavation
@@ -856,7 +855,6 @@ button.cell.dusty {
     radial-gradient(circle at 68% 28%, var(--khaki-dark) 0 2px, transparent 2px 2.5px),
     var(--gold-dark);
   color: transparent;
-  animation: dust-settle 320ms ease-out;
   cursor:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><g transform='rotate(40 14 14)'><rect x='12' y='3' width='4' height='9' rx='1' fill='%238a6225' stroke='%2315120d' stroke-width='1.5'/><rect x='9' y='11' width='10' height='6' rx='1.5' fill='%23e3ac3d' stroke='%2315120d' stroke-width='1.5'/></g></svg>")
       6 22,
@@ -887,17 +885,20 @@ button.cell.dusty::after {
   }
 }
 
-/* A freshly-dug cell is this page's URL fragment right after the redirect
-   (#cell-R-C), so :target picks out exactly the one that just changed, with
-   no client-side JS: a burst pops behind it, debris kicks up and the tile
-   squashes then settles as it lands. */
-button.cell.dusty:target,
+/* Only a dig that just happened animates; a tile the server rendered dug is
+   simply dug. With script that's .live-arrived, which the client puts on
+   exactly the tile it saw change. Without script it's :target, the
+   #cell-R-C the dig's redirect lands on. (html.js is set before first
+   paint, so :target never replays an old burst on a reload, a bookmark or a
+   shared link once script is running.) A burst pops behind it, debris
+   kicks up and the tile squashes then settles as it lands. */
+html:not(.js) button.cell.dusty:target,
 button.cell.dusty.live-arrived {
   animation: dust-settle 320ms ease-out, dig-impact 560ms cubic-bezier(0.3, 1.3, 0.5, 1);
   z-index: 1;
 }
 
-button.cell.dusty:target::before,
+html:not(.js) button.cell.dusty:target::before,
 button.cell.dusty.live-arrived::before {
   content: "";
   position: absolute;
@@ -908,7 +909,7 @@ button.cell.dusty.live-arrived::before {
   pointer-events: none;
 }
 
-button.cell.dusty:target::after,
+html:not(.js) button.cell.dusty:target::after,
 button.cell.dusty.live-arrived::after {
   animation: dust-settle 320ms ease-out, debris-kick 600ms ease-out forwards;
 }
@@ -1032,16 +1033,15 @@ a.cell:focus-visible {
   z-index: 1;
 }
 
-/* A freshly-brushed cell is this page's URL fragment on load: dust flecks
-   fly off and a light sweep crosses it as the dirt comes away, pure CSS
-   via :target. */
-a.cell:target,
+/* A freshly-brushed cell, on the same terms as a fresh dig above: dust
+   flecks fly off and a light sweep crosses it as the dirt comes away. */
+html:not(.js) a.cell:target,
 a.cell.live-arrived {
   animation: brush-pop 620ms ease-out;
   z-index: 1;
 }
 
-a.cell:target::before,
+html:not(.js) a.cell:target::before,
 a.cell.live-arrived::before {
   content: "";
   position: absolute;
@@ -1144,46 +1144,119 @@ a.cell.live-arrived::before {
 /* ---------- Field note page: a specimen record, like a museum catalog
    page ---------- */
 
+/* A plain evidence card, in the Archive's specimen-card language: warm
+   brown line, parchment, soft shadow. Stamp and title, the find itself as
+   the exhibit, the field note, then a small ledger of who found it. */
 .note-card {
   position: relative;
-  max-width: 44rem;
-  padding: 1.5rem;
+  display: grid;
+  gap: 1.1rem;
+  max-width: 40rem;
+  margin-top: 0.4rem;
+  padding: 1.5rem 1.6rem 1.4rem;
   background: var(--paper-hi);
-  border: var(--line) solid var(--ink);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--line-ink, #4a2f1d);
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgba(74, 47, 29, 0.18), 0 10px 22px rgba(74, 47, 29, 0.12);
+}
+
+.note-card-head .stamp {
+  margin-bottom: 0.5rem;
 }
 
 .note-card h1 {
-  margin-top: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 4vw, 1.9rem);
+  line-height: 1.15;
 }
 
 .note-card .fragment {
   position: relative;
-  padding: 1rem;
-  margin: 0.75rem 0 1.25rem;
+  margin: 0;
+  padding: 1rem 1.1rem;
   font-family: "Comic Sans MS", "Comic Sans", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.35;
   background: #000033;
   color: #ffff66;
-  border: var(--line-thin) solid var(--khaki-dark);
-  box-shadow: 0 0 0 2px var(--ink);
+  border: 1.5px solid var(--ink);
   border-radius: 6px;
+  box-shadow: 0 0 0 3px #e3ac3d, 0 3px 0 4px rgba(74, 47, 29, 0.25);
 }
 
-.note-card h2 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1rem;
-  font-style: italic;
-  color: var(--terracotta);
-  margin-bottom: 0.4rem;
+.note-card-note h2 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
 }
 
-.note-card [data-finder],
-.note-card [data-brusher] {
+.note-card-note p {
+  margin: 0;
   font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Who found it, as a ledger: label left, name and date right, ruled. */
+.note-card-record {
+  display: grid;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(74, 47, 29, 0.45);
+}
+
+.note-card-record > div {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+  padding: 0.35rem 0;
+}
+
+.note-card-record > div + div {
+  border-top: 1px dotted rgba(74, 47, 29, 0.3);
+}
+
+.note-card-record dt {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--ink-soft);
-  font-size: 0.9rem;
+}
+
+.note-card-record dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.note-card-when {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 30rem) {
+  .note-card {
+    padding: 1.2rem 1.1rem 1.1rem;
+  }
+
+  .note-card-record > div {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
 }
 
 /* ---------- Specimen tray drop zone (sidebar widget) ---------- */
@@ -1240,6 +1313,10 @@ a.cell.live-arrived::before {
   background: var(--paper-hi);
   border: var(--line-thin) solid var(--ink);
   border-radius: 6px;
+}
+
+/* Only the find just set down pops in, not the whole tray on every load. */
+.tray-tag.live-new {
   animation: specimen-settle 280ms ease-out;
 }
 
@@ -2027,25 +2104,6 @@ a.cell.live-arrived::before {
     opacity: 1;
     transform: translate(-50%, 0);
   }
-}
-
-/* Once the page has loaded, regions get swapped in place on every action
-   and every live update. Their load-in animations would replay on each swap
-   and the whole board would flicker, so after the first swap only what
-   actually changed (.live-arrived, .live-new) animates. */
-.settled .grid,
-.settled .tray-tag,
-.settled button.cell.dusty:not(.live-arrived),
-.settled button.cell.dusty:not(.live-arrived)::before,
-.settled button.cell.dusty:not(.live-arrived)::after,
-.settled a.cell:not(.live-arrived),
-.settled a.cell:not(.live-arrived)::before {
-  animation: none;
-}
-
-/* A :target burst left over from a no-JS reload shouldn't fire again either. */
-.settled button.cell.dusty:target:not(.live-arrived)::before {
-  content: none;
 }
 
 /* Arriving at a #cell-R-C link (no-JS redirects, a shared link) centres the
@@ -4667,5 +4725,201 @@ a.specimen-tag:hover {
   .iso-stage .cell[data-pending] {
     animation: none;
     box-shadow: inset 0 0 0 3px rgba(250, 243, 226, 0.9);
+  }
+}
+
+/* ---------- How to dig: three steps, one line, above the board ----------
+   A field-guide caption rather than a tutorial box: three small chips with
+   arrows between them. Each step ticks off the first time the player does
+   it (index.astro); once all three are done the strip folds to one quiet
+   line of text. */
+.how-to {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink-soft);
+}
+
+.how-to li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* the arrow between steps, outside the chips */
+.how-to li + li::before {
+  content: "\2192";
+  font-weight: 700;
+  color: rgba(74, 47, 29, 0.6);
+}
+
+.how-to-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem 0.22rem 0.4rem;
+  white-space: nowrap;
+  background: var(--paper-hi);
+  border: 1.5px solid var(--line-ink);
+  border-radius: 999px;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.how-to-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background: center / contain no-repeat;
+}
+
+.how-to-dig {
+  background-image: url("/props/trowel.webp");
+}
+
+.how-to-brush {
+  background-image: url("/props/cursor-brush.png");
+}
+
+/* the clue, drawn in the board's own fragment colours */
+.how-to-save {
+  width: 0.95rem;
+  height: 0.62rem;
+  background: #000033;
+  border: 1.25px solid var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1.25px var(--gold);
+}
+
+/* a step done: ticked, quieter */
+.how-to li[data-done] .how-to-chip {
+  background: #e7efd9;
+  color: #3f5a2c;
+}
+
+.how-to li[data-done] .how-to-icon {
+  opacity: 0.5;
+}
+
+.how-to li[data-done] .how-to-chip::after {
+  content: "\2713";
+  font-weight: 700;
+  color: #4a8f3c;
+}
+
+/* All three learned: fold to one plain caption, no chips. */
+.how-to[data-learned] {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.65;
+}
+
+.how-to[data-learned] .how-to-chip {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink-soft);
+}
+
+.how-to[data-learned] .how-to-icon,
+.how-to[data-learned] .how-to-chip::after {
+  display: none;
+}
+
+/* Tap on a phone, click with a mouse. */
+.verb-pointer {
+  display: none;
+}
+
+@media not (pointer: coarse) {
+  .verb-touch {
+    display: none;
+  }
+
+  .verb-pointer {
+    display: inline;
+  }
+}
+
+/* Phone: one compact line straight above the map. */
+@media (max-width: 40rem) {
+  .how-to {
+    gap: 0.2rem;
+    margin-bottom: 0.55rem;
+    font-size: 0.69rem;
+  }
+
+  .how-to li {
+    gap: 0.2rem;
+  }
+
+  .how-to-chip {
+    gap: 0.22rem;
+    padding: 0.2rem 0.45rem 0.2rem 0.32rem;
+  }
+
+  .how-to-icon {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .how-to-save {
+    width: 0.8rem;
+    height: 0.52rem;
+  }
+}
+
+/* ---------- The next action, drawn on the tile ----------
+   A dug tile shows the brush, standing upright on the tilted plane, so it
+   reads as "brush me" rather than as finished. Desktop has the brush as
+   its cursor too; touch has no cursor, so this is how a phone shows it. */
+.iso-stage .brush-cue {
+  position: absolute;
+  left: 78%;
+  top: 22%;
+  z-index: 2;
+  width: clamp(0.9rem, calc(var(--s) * 0.28), 1.45rem);
+  height: clamp(0.9rem, calc(var(--s) * 0.28), 1.45rem);
+  background: url("/props/cursor-brush.png") center / contain no-repeat;
+  filter: drop-shadow(0 1.5px 0 rgba(43, 26, 14, 0.45));
+  pointer-events: none;
+  transform-origin: 0 0;
+  transform: rotate(-45deg) scale(1, 1.72414) translate(-50%, -50%);
+  animation: brush-cue-nudge 2.4s ease-in-out infinite;
+}
+
+/* the flat 2D grid (no .iso-stage) has the brush cursor and no room for a badge */
+.brush-cue {
+  display: none;
+}
+
+.iso-stage .brush-cue {
+  display: block;
+}
+
+@keyframes brush-cue-nudge {
+  0%, 70%, 100% {
+    rotate: 0deg;
+  }
+  80% {
+    rotate: -14deg;
+  }
+  90% {
+    rotate: 10deg;
+  }
+}
+
+/* Out of free digs, buried ground says so; a dug tile still waits for a
+   brush, which isn't capped, so its cue stays. */
+@media (prefers-reduced-motion: reduce) {
+  .iso-stage .brush-cue {
+    animation: none;
   }
 }

@@ -14,6 +14,10 @@ const { title, fit = false } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Set before first paint: with script, a tile's change animates only
+         when the client sees it change (.live-arrived), never because the
+         server rendered it; without, :target animates the one just acted on. -->
+    <script is:inline>document.documentElement.classList.add("js");</script>
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

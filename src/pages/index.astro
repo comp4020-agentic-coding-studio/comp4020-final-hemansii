@@ -152,6 +152,11 @@ const edges = (row: number, col: number): string | undefined => {
 
   <div class="excavation-layout">
     <div class="dig-pane">
+      <ol class="how-to" id="how-to" aria-label="How to dig">
+        <li data-step="dig"><span class="how-to-chip"><span class="how-to-icon how-to-dig" aria-hidden="true"></span><span class="how-to-text"><span class="verb-touch">Tap</span><span class="verb-pointer">Click</span> to dig</span></span></li>
+        <li data-step="brush"><span class="how-to-chip"><span class="how-to-icon how-to-brush" aria-hidden="true"></span><span class="how-to-text"><span class="verb-touch">Tap</span><span class="verb-pointer">Click</span> again to brush</span></span></li>
+        <li data-step="save"><span class="how-to-chip"><span class="how-to-icon how-to-save" aria-hidden="true"></span><span class="how-to-text"><span class="verb-touch">Tap a clue to save</span><span class="verb-pointer">Press + on a clue to save it</span></span></span></li>
+      </ol>
       <div class="dig-viewport" id="dig-viewport">
       <p class="pan-hint" id="pan-hint" aria-hidden="true" hidden>Drag to explore the dig site</p>
       <span class="edge-fade edge-left" aria-hidden="true"></span>
@@ -219,7 +224,7 @@ const edges = (row: number, col: number): string | undefined => {
                     formaction="/api/brush"
                     form="dig-form"
                     aria-label={`Brush row ${row + 1}, column ${col + 1}`}
-                  />
+                  ><span class="brush-cue" aria-hidden="true"></span></button>
                 );
               }
               return (
@@ -299,9 +304,9 @@ const edges = (row: number, col: number): string | undefined => {
                 <span class="hint-touch">Tap a recovered find on the dig site to add it to your tray.</span>
               </p>
             ) : (
-              <ul class="tray-items">
+              <ul class="tray-items" id="tray-list">
                 {tray.map(({ row, col, cell, finder, note }) => (
-                  <li class="tray-tag">
+                  <li class="tray-tag" data-key={`${row}-${col}`}>
                     <span class="tray-tag-ref">{gridRef(row, col)}</span>
                     <div class="tray-tag-body">
                       <a href={`/section/${row}-${col}`} class="tray-tag-fragment" data-kind={cell.kind} set:html={cell.html} />
@@ -481,7 +486,7 @@ const edges = (row: number, col: number): string | undefined => {
       });
       const ids = new Set<string>();
       document
-        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
+        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key], #tray-list [data-key]")
         .forEach((el) => ids.add(itemKey(el)));
       return { states, ids };
     }
@@ -573,7 +578,7 @@ const edges = (row: number, col: number): string | undefined => {
         if (was && was !== el.dataset.state) el.classList.add("live-arrived");
       });
       document
-        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key]")
+        .querySelectorAll<HTMLElement>("#notes-list [data-id], #theories-list [data-id], #dig-log-list [data-key], #tray-list [data-key]")
         .forEach((el) => {
           if (before.ids.has(itemKey(el))) return;
           el.classList.add("live-new");
@@ -621,10 +626,10 @@ const edges = (row: number, col: number): string | undefined => {
         wireDrop();
         announceNewSite();
         centreField();
+        renderHowTo();
         return;
       }
       const before = snapshot();
-      document.documentElement.classList.add("settled");
 
       for (const id of LIVE_IDS) {
         const next = fresh.getElementById(id);
@@ -665,6 +670,40 @@ const edges = (row: number, col: number): string | undefined => {
 
     // Posts an action the way its form would, then updates the page where it
     // stands instead of following the redirect into a full reload.
+    // The three-step how-to above the board. Each step ticks off the first
+    // time the player's own action succeeds (the server's reply, not a guess),
+    // and once all three are done the strip folds down to a quiet line. Kept
+    // per browser so a returning player isn't taught again; a blocked
+    // localStorage just means it keeps showing.
+    const HOW_TO_KEY = "dig-how-to";
+    const STEP_FOR: Record<string, string> = { ok: "dig", brushed: "brush", archived: "save" };
+    function learned(): Set<string> {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(HOW_TO_KEY) ?? "[]") as string[]);
+      } catch {
+        return new Set();
+      }
+    }
+    function renderHowTo(): void {
+      const strip = document.getElementById("how-to");
+      if (!strip) return;
+      const done = learned();
+      strip.querySelectorAll<HTMLElement>("[data-step]").forEach((li) => li.toggleAttribute("data-done", done.has(li.dataset.step ?? "")));
+      strip.toggleAttribute("data-learned", ["dig", "brush", "save"].every((s) => done.has(s)));
+    }
+    function learn(result: string | null): void {
+      const step = result ? STEP_FOR[result] : undefined;
+      if (!step) return;
+      const done = learned();
+      if (done.has(step)) return;
+      done.add(step);
+      try {
+        localStorage.setItem(HOW_TO_KEY, JSON.stringify([...done]));
+      } catch {}
+      renderHowTo();
+    }
+    renderHowTo();
+
     async function act(action: string, body: URLSearchParams, near?: Element): Promise<void> {
       const res = await fetch(action, {
         method: "POST",
@@ -674,6 +713,7 @@ const edges = (row: number, col: number): string | undefined => {
       const landed = new URL(res.url);
       const result = landed.searchParams.get("r");
       await resync(res.ok && landed.pathname === location.pathname ? await res.text() : undefined);
+      learn(result);
       // Out of digs is answered where the player tapped, not as a toast in
       // the corner; the tile was re-rendered by the resync, so find it again.
       if (result === "out-of-digs") {
