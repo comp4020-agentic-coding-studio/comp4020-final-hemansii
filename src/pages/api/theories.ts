@@ -14,7 +14,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   audit("theory", visitor, siteId, result === "rejected" ? "rejected" : "ok", { result });
   const from = String(form.get("from") ?? "");
   if (result === "solved") return redirect("/?r=solved#mystery", 303);
-  if (from === "archive") return redirect("/archive?r=theory-ok#theories", 303);
+  const r = result === "needs-evidence" ? "theory-needs-evidence" : "theory-ok";
+  if (from === "archive") return redirect(`/archive?r=${r}#theories`, 303);
   const anchor = from === "mystery" ? "mystery" : "theories";
-  return redirect(`/?r=theory-ok#${anchor}`, 303);
+  return redirect(`/?r=${r}#${anchor}`, 303);
 };

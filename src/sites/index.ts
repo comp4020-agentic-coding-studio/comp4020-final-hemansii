@@ -26,6 +26,11 @@ export const names = (site: Site, guess: string): boolean => {
   return site.answers.some((a) => plain.includes(a));
 };
 
+// How many different sites a guess names. More than one is a list, not a
+// theory: "clubpenguin myspace neopets bebo miniclip" names every site, so
+// it can't be allowed to solve whichever happens to be open.
+export const sitesNamed = (guess: string): number => Object.values(SITES).filter((site) => names(site, guess)).length;
+
 export const cellAt = (site: Site, row: number, col: number): Cell | undefined =>
   site.cells[row]?.[col];
 

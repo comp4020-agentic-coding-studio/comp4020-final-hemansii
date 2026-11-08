@@ -61,6 +61,7 @@ const MESSAGES: Record<string, string> = {
   "name-set": "Name updated.",
   "note-ok": "Field note posted.",
   "theory-ok": "Theory posted.",
+  "theory-needs-evidence": "Correct guess, but cite a recovered clue to solve the site.",
   solved: "You named it! A new website has been buried. Start digging.",
   archived: "Added to your specimen tray.",
   unarchived: "Removed from your specimen tray.",
@@ -321,6 +322,12 @@ const edges = (row: number, col: number): string | undefined => {
       </div>
       <form method="post" action="/api/theories" class="mystery-form">
         <input type="hidden" name="from" value="mystery" />
+        {/* The quick box has no picker, so it cites the tray's first finds
+            for the player (kept in step with the tray by the live layer).
+            The server still keeps only finds really in their tray. */}
+        <span id="mystery-evidence" hidden>
+          {tray.slice(0, MAX_EVIDENCE).map(({ row, col }) => <input type="hidden" name="evidence" value={`${row}-${col}`} />)}
+        </span>
         <label for="mystery-body" class="visually-hidden">Your theory about the buried site</label>
         <input id="mystery-body" name="body" maxlength="300" placeholder="I think it was…" autocomplete="off" required />
         <button type="submit">Log my theory</button>
@@ -403,8 +410,8 @@ const edges = (row: number, col: number): string | undefined => {
           <label for="theory-body" class="visually-hidden">Submit a theory</label>
           <textarea id="theory-body" name="body" maxlength="300" rows="2" placeholder="I think this was…" required></textarea>
           <fieldset class="evidence-pick" id="evidence-pick" data-max={MAX_EVIDENCE}>
-            <legend>Evidence from your tray <span>(up to {MAX_EVIDENCE}, optional)</span></legend>
-            {tray.length === 0 && <p class="evidence-none">Save finds to your tray to cite them here.</p>}
+            <legend>Evidence from your tray <span>(up to {MAX_EVIDENCE}, needed to solve)</span></legend>
+            {tray.length === 0 && <p class="evidence-none">Save finds to your tray to cite them here. A theory needs one to solve the site.</p>}
             {tray.map(({ row, col, cell }) => (
               <label class="evidence-chip" title={cell.html.replace(/<[^>]+>/g, "")}>
                 <input type="checkbox" name="evidence" value={`${row}-${col}`} />
@@ -517,6 +524,7 @@ const edges = (row: number, col: number): string | undefined => {
       "tray-contents",
       "tray-count",
       "evidence-pick",
+      "mystery-evidence",
       "buy-dig-slot",
       "trivia-card",
     ];

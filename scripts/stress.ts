@@ -162,8 +162,14 @@ async function doubleSolve(): Promise<void> {
   const site = openSiteId();
   const answer = ANSWERS[site.split("~")[0]];
   const ps = await players(20);
+  // A solve needs a find in the poster's own tray, so one section is dug and
+  // brushed, and each player saves it before the race.
+  const [cell] = buried(site);
+  await ps[0].post("/api/dig", { cell });
+  await ps[0].post("/api/brush", { cell });
+  await Promise.all(ps.map((p) => p.post("/api/archive", { cell, action: "add" })));
   const closedBefore = (db.prepare("select count(*) n from sites where closed_at is not null").get() as { n: number }).n;
-  const results = await Promise.all(ps.map((p) => p.post("/api/theories", { body: `it's ${answer}` })));
+  const results = await Promise.all(ps.map((p) => p.post("/api/theories", { body: `it's ${answer}`, evidence: cell })));
   const t = tally(results);
   const closed = db.prepare("select solved_by from sites where id = ?").get(site) as { solved_by: string | null };
   const closedAfter = (db.prepare("select count(*) n from sites where closed_at is not null").get() as { n: number }).n;

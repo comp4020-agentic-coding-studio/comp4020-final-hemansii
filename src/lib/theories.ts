@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { type Cell, cellAt, names, siteFor } from "../sites";
+import { type Cell, cellAt, names, siteFor, sitesNamed } from "../sites";
 import { db } from "./db";
 import { rotate } from "./dig";
 import { changed } from "./events";
@@ -13,12 +13,19 @@ const MAX_LEN = 300;
 // A theory leans on a few finds, not the whole tray.
 export const MAX_EVIDENCE = 3;
 
-export type TheoryResult = "rejected" | "posted" | "solved";
+// "needs-evidence": named the site, but cited nothing from the tray, so it
+// was posted as an ordinary theory and the site stays open.
+export type TheoryResult = "rejected" | "posted" | "needs-evidence" | "solved";
 
 // `evidence` is "row-col" keys; only finds actually in the poster's own tray
 // are kept, so a theory can't cite a section nobody has brushed yet (that
-// would leak its content to everyone reading the feed). A theory that names
-// the site solves it: the site closes and the next one is buried.
+// would leak its content to everyone reading the feed). The tray is looked
+// up by the visitor id from their cookie, never taken from the request.
+//
+// A theory solves the site only when it names it AND cites at least one of
+// those finds, and names no other site. Without that, theories being free
+// and unlimited meant one post listing every site's name solved whichever
+// was open, with nothing dug. Any theory still posts to the feed either way.
 export function postTheory(visitorId: string, siteId: string, body: string, evidence: string[] = []): TheoryResult {
   const trimmed = body.trim().slice(0, MAX_LEN);
   if (!trimmed) return "rejected";
@@ -33,6 +40,8 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
   );
   const cited = [...new Set(evidence)].filter((key) => inTray.has(key)).slice(0, MAX_EVIDENCE);
 
+  const namesIt = !!site && names(site, trimmed) && sitesNamed(trimmed) === 1;
+
   const solved = db.transaction((tx) => {
     const { id } = tx.insert(theories).values({ siteId, visitorId, body: trimmed }).returning({ id: theories.id }).get();
     for (const key of cited) {
@@ -41,13 +50,14 @@ export function postTheory(visitorId: string, siteId: string, body: string, evid
     }
     // still open? (a second correct guess in the same instant loses)
     const open = tx.select({ closedAt: sites.closedAt }).from(sites).where(eq(sites.id, siteId)).get();
-    if (!site || open?.closedAt || !names(site, trimmed)) return false;
+    if (!namesIt || cited.length === 0 || open?.closedAt) return false;
     rotate(tx, siteId, visitorId);
     awardSolve(tx, visitorId);
     return true;
   });
   changed();
-  return solved ? "solved" : "posted";
+  if (solved) return "solved";
+  return namesIt && cited.length === 0 ? "needs-evidence" : "posted";
 }
 
 export function listTheories(siteId: string, limit = 30): TheoryEntry[] {
