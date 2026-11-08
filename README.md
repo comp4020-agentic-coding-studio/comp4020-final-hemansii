@@ -1,67 +1,46 @@
 # The Dig
 
-The Dig is a shared, persistent excavation game. Visitors get a capped
-number of digs a day, brush what they uncover, and slowly reconstruct one
-buried website together: a famous 2000s site (Club Penguin, MySpace,
-Neopets, Bebo, Miniclip), revealed one grid cell at a time. The first
-theory that names it solves it, and the next site is buried. Finds go in a specimen tray, and
-visitors leave field notes and theories for each other about what the
-site used to be.
+The Dig is a shared excavation game about uncovering the early web together. Visitors receive five free digs each day, expose and brush sections of a buried site, save useful fragments to a private specimen tray, leave field notes, and build theories from evidence.
+
+A site is not solved simply by naming it. A winning theory must name the correct site, name no competing site, and cite at least one recovered clue from that visitor's own tray. When a site is solved, it moves into History and the next one is buried.
 
 ## What good means here
 
-For a crit called "it's alive", good means the world is actually shared,
-not merely rendered per visitor: a dig, a brushed find, a note or a
-theory posted by one visitor has to be visible to the next one who loads
-the page, with nothing lost on restart. `spec/persistence.test.ts` and
-`spec/dig-limit.test.ts` check that mechanically. Whether the act of
-digging and brushing itself feels like excavating something, rather than
-clicking a counter up, is not something a test can check and is left to
-be judged.
+Good means the excavation behaves like one shared place rather than a collection of independent browser sessions. Actions must persist and become visible to other visitors. Live sessions should see changes without reloading, while the server remains the source of truth when two people act on the same section at once. The first successful write wins. The trade-offs behind that choice are recorded in [`docs/decisions/0001-live-same-cell-race.md`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-hemansii/blob/main/docs/decisions/0001-live-same-cell-race.md).
 
-The second half of good is visual. The brief for this crit asked for a
-restyle grounded in reference art, two Hergé Tintin covers, for the flat
-colour, confident black linework and poster typography of ligne claire,
-and then, in a second pass, for something wider and calmer: an editorial
-layout where the board is the page, not a centred dashboard beside three
-stacked cards. Neither of those is enforced by a test. Whether the result
-reads as one illustrated place rather than a reskinned form is a
-judgement call, and the honest answer is it took two full passes, plus a
-deliberate decision not to touch the data model or the no-JavaScript
-`:target` animation technique, to get there without breaking what the
-spec does check.
+Good also means that solving requires participating in the excavation. The specimen tray is not only a collection screen: it supplies the evidence needed to solve a site. This prevents a visitor from bypassing the game by listing every possible answer in one theory.
 
-For a crit called "all at once", good also means the shared world updates
-live: a dig, a brush, a note or a theory posted by one visitor reaches every
-other open session within about a second, with no reload, not just on their
-next page load. `spec/realtime.test.ts` checks that mechanically. What
-happens when two visitors reach for the same cell inside that same second is
-written down in
-[`docs/decisions/0001-live-same-cell-race.md`](docs/decisions/0001-live-same-cell-race.md),
-with the options considered and what the choice costs. Whether the live
-layer reads as a shared room rather than everyone quietly polling the same
-page is not something a test can check and is left to be judged.
+The course's C5 *A game* brief argues that a game should teach itself through play without on-screen instructions. I followed that idea in the tile states: buried sections invite digging, dusty sections show a brush cue, revealed clues can be saved, and saved finds gain a visible tick. I did not follow the rule completely. When friends tested the phone version, it was not obvious that a dug section needed a second tap, so I kept a small `dig -> brush -> save` strip. It marks each step as learned and folds down once all three have been completed.
 
-## What this doesn't do
+The final experience should also communicate its state clearly. Players can see who else is present, when the live connection drops, what happened while they were away, when free digs return, and who contributed clues to a solved site. Personal evidence stays private to the visitor who saved it, while shared notes and theories remain public. That boundary is documented in [`docs/decisions/0002-what-a-visitor-may-see-and-change.md`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-hemansii/blob/main/docs/decisions/0002-what-a-visitor-may-see-and-change.md).
 
-No decay ("silting") of untouched tiles over time, though the schema already
-timestamps every dig, so that is one migration away rather than a rewrite.
-Silting was left out on purpose rather than half built.
+## What is enforced
 
-## Enforced versus judged
+The checks in `spec/` cover rules that can be made objective:
 
-Enforced, in `spec/`: the app answers at `/`, `/readme/` publishes this
-file's headings in order, a dig and a brush persist and are visible to
-every visitor, each visitor gets exactly `DIGS_PER_DAY` digs, a
-section's content never reaches the page before it has been brushed, and
-a dig, brush, note or theory reaches another open session over
-`/api/events` within a bounded time, with no reload.
+- digs and brushes persist;
+- each visitor receives the correct daily dig allowance;
+- unrevealed content does not leak before brushing;
+- real-time dig updates reach other open sessions;
+- visitor identity and private specimen ownership are enforced server-side;
+- audit logs do not expose the raw visitor cookie;
+- solving requires valid evidence and rejects the all-five-names shortcut;
+- free digs reset on the Canberra/Sydney day boundary;
+- solved-site history credits contributors.
 
-Judged, not tested: whether the three tile states, buried, dusty,
-revealed, read as a real excavation instead of three colours, whether the
-specimen tray and the field notes and theories feel like one
-collaborative investigation rather than three unrelated widgets bolted
-onto a grid, whether the typography and layout choices in `CLAUDE.md`
-and `src/styles.css` actually deliver the calmer, wider feel the second
-redesign pass asked for, and whether the live updates feel like a shared
-room rather than a mechanical refresh.
+`scripts/stress.ts` separately exercises concurrency and bonus-dig purchasing, including many visitors racing for the same section and a 20-player simultaneous solve that must still produce exactly one winner.
+
+## What is judged
+
+Some claims cannot be reduced to tests: whether the excavation reads as one illustrated place, whether digging and brushing feel different from generic buttons, and whether the phone version works as its own layout. I judged those through repeated browser checks at 1920×1080 and 390×844 after interface changes, alongside feedback from friends testing the mobile interaction.
+
+## Limits and trade-offs
+
+The deployment uses one Fly machine with one persistent SQLite volume.
+
+A visitor's identity lives in that browser's cookie, so there is no cross-device account system. There are five buried sites; after all five have appeared, the sequence can repeat. Untouched sections do not silt over time.
+
+## Sources
+
+- COMP4020/8020 Agentic Coding Studio, C5: *A game*. Used as a reference for teaching interaction through play.
+- Two Hergé *Tintin* cover images for ligne claire: flat colour, confident linework and poster-like composition.

@@ -1,0 +1,33 @@
+# Who verifies the agent?
+
+Agentic coding changes where the developer's effort goes. When an agent writes much of the code, the difficult part is no longer producing every line by hand. It is deciding what counts as correct and creating evidence that can expose when the agent is wrong. My position is that good agentic development depends on verification signals that are not controlled only by the same agent whose work is being judged.
+
+Research on LLM self-correction gives a reason for that caution. Huang et al. (2023) found that language models often failed to improve reasoning answers when asked to critique themselves without external feedback, and could even make correct answers worse. Kamoi et al. (2024) reached a similar conclusion in a broader survey: prompted self-correction had limited evidence of reliable success on general tasks, while correction worked much better when dependable external feedback was available. These results matter, but they do not transfer directly to coding. They concern model reasoning more broadly, whereas coding agents can use compilers, tests and browsers. That limitation sharpens the question rather than removing it: which parts of a coding agent's feedback are genuinely independent of its own judgement?
+
+Xu et al. (2024), a peer-reviewed ACL study, found that models tend to favour their own generated answers and that iterative self-refinement can amplify this self-bias. Guo et al. (2026) extend the problem from answers to self-improving agents, although their work is currently an arXiv preprint rather than peer-reviewed research. They describe a "verifier-deployment gap", where an agent's own verifier can report strong results while deployment performance remains poor. Their SEAL approach does not discard self-authored tests. It adds a fixed acceptance check that the agent cannot author or inspect. Xu therefore gives stronger peer-reviewed evidence for the underlying bias, while Guo offers a newer agent-specific mechanism and a practical mitigation.
+
+A reasonable counter-case is that coding agents already write and run tests, so their work is not really being accepted on self-report alone. My project showed why that is not sufficient. When site solving was introduced, the agent also added `spec/zz-solve.test.ts`. The test checked that a wrong guess did nothing and that naming the correct site solved it. It stayed green even though one theory listing all five possible site names could solve whichever site was open. The loophole surfaced later during a product-planning and code-review pass that I asked the agent to perform, not from the test suite that had been judging the implementation.
+
+That detail matters. The catch also came from an agent, but from a separate review task with a different objective. It was not independent in the strong sense of Guo et al.'s hidden fixed audit, because the same model family was still involved, but it was outside the implementation-and-test loop that had accepted the original behaviour. I then defined explicit acceptance criteria: ordinary hunches could still post, solving required one correct site name plus evidence from that visitor's own tray, the server had to verify the evidence, and a theory listing all five names could not solve the site. The revised tests in `8135575` encode those conditions. This suggests that independence does not always require a human reviewer, but it does require some check whose objective is not simply inherited from the implementation being judged.
+
+Practitioner accounts show how this becomes a workflow. Beck (2025) describes "augmented coding" as allowing an agent to perform much of the implementation while the developer remains responsible for tests, design decisions and acceptance. He treats behaviours such as disabling tests or adding unrequested functionality as warning signs. Willison (2025) similarly argues that professional AI-assisted development requires developers to remain "proudly and confidently accountable" for what they ship. The research identifies why self-evaluation can fail; these practitioners describe how developers respond to that risk in practice.
+
+The security evidence points in the same direction. Veracode's 2025 industry report tested more than 100 models on 80 coding tasks and found that 45% of generated samples failed security tests and introduced OWASP Top 10 vulnerabilities. This is not evidence that every agentic system is insecure, but it shows why code that appears functionally successful should not be treated as verified.
+
+Good agentic practice therefore does not mean excluding the agent from verification. Agents can write tests, inspect failures and review other agent-produced work. The stronger rule is that no single implementation loop should be the sole author and judge of the evidence used to accept its own output. At least one important acceptance signal should be anchored outside that loop, in a requirement, fixed test, separate review, compiler, deployment log, browser check or human judgement. In agentic development, who defines the check matters as much as whether the check turns green.
+
+## References
+
+Beck, K. (2025). *Augmented Coding: Beyond the Vibes*. Kent Beck's Newsletter. https://newsletter.kentbeck.com/p/augmented-coding-beyond-the-vibes
+
+Guo, D., Cao, C., Yuan, F., Wang, Y., Wang, Y., & Wang, D. (2026). *Self-Authored Verification Is Unreliable in Heuristic Self-Improving Agents*. arXiv:2607.24300. https://arxiv.org/abs/2607.24300
+
+Huang, J., Chen, X., Mishra, S., Zheng, H. S., Yu, A. W., Song, X., & Zhou, D. (2023). *Large Language Models Cannot Self-Correct Reasoning Yet*. arXiv:2310.01798. https://arxiv.org/abs/2310.01798
+
+Kamoi, R., Zhang, Y., Zhang, N., Han, J., & Zhang, R. (2024). *When Can LLMs Actually Correct Their Own Mistakes? A Critical Survey of Self-Correction of LLMs*. Transactions of the Association for Computational Linguistics, 12, 1417-1440. https://doi.org/10.1162/tacl_a_00713
+
+Veracode. (2025). *GenAI Code Security Report 2025*. https://www.veracode.com/wp-content/uploads/2025_GenAI_Code_Security_Report_Final.pdf
+
+Willison, S. (2025). *Vibe engineering*. https://simonwillison.net/2025/Oct/7/vibe-engineering/
+
+Xu, W., Zhu, G., Zhao, X., Pan, L., Li, L., & Wang, W. (2024). *Pride and Prejudice: LLM Amplifies Self-Bias in Self-Refinement*. Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics, 15474-15492. https://doi.org/10.18653/v1/2024.acl-long.826
