@@ -5281,3 +5281,97 @@ a.specimen-tag:hover {
     white-space: nowrap;
   }
 }
+
+/* ---------- One-row composers in the side pane ----------
+   A stacked composer (box, then button under it) put Post note and Post
+   theory below the open tab's edge once the pane was squeezed: the panel
+   can shrink to its floor (9rem, 13rem for Theories) and the button was
+   the first thing to go. The box and its button now share a row, so the
+   whole composer is two lines of text tall and fits inside the floor.
+   A theory doesn't need evidence to post (only to solve), so its button
+   sits beside the box too, with the evidence section right under the
+   row. The grid lines up the button with the box's top and keeps the
+   evidence spanning the full width. */
+.field-pane .feed-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "box  send"
+    "evid evid";
+  align-items: start;
+  gap: 0.45rem 0.55rem;
+  margin: 0 0 0.7rem;
+}
+
+.field-pane .feed-form textarea {
+  grid-area: box;
+  min-width: 0;
+  height: 3.6rem;
+  min-height: 3.6rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.field-pane .feed-form button {
+  grid-area: send;
+  align-self: stretch;
+  max-height: 3.6rem;
+  padding: 0 0.85rem;
+  white-space: nowrap;
+}
+
+.field-pane .feed-form .evidence-pick {
+  grid-area: evid;
+  gap: 0.25rem;
+}
+
+.field-pane .feed-form .evidence-pick legend {
+  margin-bottom: 0.15rem;
+}
+
+/* The panel's own padding and the gap above the list were set for the
+   stacked form; trimmed with it. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen #tab-tray:checked ~ #tray,
+  .fit-screen #tab-notes:checked ~ #notes,
+  .fit-screen #tab-theories:checked ~ #theories {
+    padding: 0.6rem 0.85rem;
+  }
+}
+
+.field-pane .feed {
+  padding-top: 0.1rem;
+}
+
+/* On a phone the box takes the full width and the button sits directly
+   under it, still one short step down, not after the evidence. */
+@media (max-width: 40rem) {
+  .field-pane .feed-form {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "box"
+      "send"
+      "evid";
+  }
+
+  .field-pane .feed-form button {
+    justify-self: stretch;
+    max-height: none;
+    min-height: 2.75rem;
+  }
+}
+
+/* The open tab's floor is what's guaranteed when the pane is squeezed (a
+   short window, a long dig log), so it's sized to the whole composer: the
+   one-line guidance, the box and its button, and for Theories the
+   evidence heading and its line. Only the list under it may scroll. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .fit-screen #tab-notes:checked ~ #notes {
+    min-height: 9.5rem;
+  }
+
+  .fit-screen #tab-theories:checked ~ #theories {
+    min-height: 14.5rem;
+  }
+}
