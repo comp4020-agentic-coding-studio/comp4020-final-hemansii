@@ -5123,3 +5123,15 @@ a.specimen-tag:hover {
     min-height: 2.5rem;
   }
 }
+
+/* ---------- When free digs come back ---------- */
+
+.dig-reset {
+  color: var(--ink-soft);
+}
+
+/* the reset time leads the out-of-digs sheet, on a line of its own */
+.ood-reset {
+  display: block;
+  margin-bottom: 0.35rem;
+}

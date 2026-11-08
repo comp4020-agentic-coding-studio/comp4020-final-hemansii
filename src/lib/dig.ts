@@ -20,6 +20,24 @@ export type BrushResult = "brushed" | "already-brushed" | "nothing-there" | "out
 export const today = (now = new Date()): string =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(now);
 
+// The instant today() next changes, which is when free digs come back.
+// Found from today() itself rather than from a second rule about midnight
+// and daylight saving: today() is the one definition of a day. The next
+// Canberra midnight is never more than 25 hours away, so search that span
+// for where the date flips, down to the second it does.
+export function nextReset(now = new Date()): Date {
+  const day = today(now);
+  let lo = now.getTime(); // still today
+  let hi = lo + 25 * 60 * 60 * 1000; // past it
+  while (hi - lo > 1000) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    if (today(new Date(mid)) === day) lo = mid;
+    else hi = mid;
+  }
+  // the flip happens on a whole second
+  return new Date(Math.floor(hi / 1000) * 1000);
+}
+
 export function openSite(): { id: string; site: Site; number: number } {
   const row = db.select().from(sites).where(isNull(sites.closedAt)).get();
   const site = row && siteFor(row.id);

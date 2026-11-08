@@ -20,6 +20,17 @@ it("each visitor gets 5 digs a day; the 6th is refused and digs nothing", async 
   const tile = after.querySelector<HTMLButtonElement>(`[data-cell="${cells[5]}"]`);
   expect(tile?.disabled).toBe(false);
   expect(tile?.hasAttribute("data-spent")).toBe(true);
+
+  // And it says when they come back: the next Canberra midnight, the same
+  // boundary the cap is counted on, as an instant and as a countdown.
+  const status = after.querySelector<HTMLElement>("[data-reset-at]");
+  const resetAt = Date.parse(status?.dataset.resetAt ?? "");
+  expect(resetAt).toBeGreaterThan(Date.now());
+  expect(resetAt - Date.now()).toBeLessThanOrEqual(25 * 60 * 60 * 1000);
+  const canberra = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  expect(canberra.format(resetAt)).toBe("00:00");
+  expect(status?.querySelector("[data-reset-in]")?.textContent).toMatch(/^(\d+h )?\d+m$/);
+  expect(after.getElementById("out-of-digs")?.textContent).toMatch(/Your free digs reset in (\d+h )?\d+m/);
 });
 
 // Not one after the other, but all at once: the top band of the brief is

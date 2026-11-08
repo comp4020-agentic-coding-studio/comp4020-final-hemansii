@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import IsoSite from "../components/IsoSite.astro";
 import { COLS, ROWS, cellAt, colLabel, gridRef } from "../sites";
-import { DIGS_PER_DAY, closedSites, digAllowance, digsToday, findings, openSite } from "../lib/dig";
+import { DIGS_PER_DAY, closedSites, digAllowance, digsToday, findings, nextReset, openSite } from "../lib/dig";
 import { listNotes } from "../lib/notes";
 import { MAX_EVIDENCE, listTheories } from "../lib/theories";
 import { KIND_LABELS, trayFor } from "../lib/specimens";
@@ -12,6 +12,7 @@ import { nextDigCost } from "../lib/shop";
 import { questionFor, triviaStatus } from "../lib/trivia";
 import { currentlyHere } from "../lib/events";
 import { markSeen, sinceLastVisit } from "../lib/away";
+import { untilLabel } from "../lib/countdown";
 
 const { visitor, isNew } = getOrCreateVisitor(Astro.cookies);
 const here = currentlyHere();
@@ -40,6 +41,11 @@ const lastDig = past[0];
 const found = findings(siteId);
 const allowance = digAllowance(visitor.id);
 const left = Math.max(0, allowance - digsToday(visitor.id));
+// When free digs come back, from the same day boundary the cap is counted
+// on. Sent as an instant, so the page counts down to it without a clock of
+// its own deciding when a day ends.
+const resetAt = nextReset();
+const resetIn = untilLabel(resetAt.getTime());
 const tray = trayFor(visitor.id, siteId);
 const saved = new Set(tray.map(({ row, col }) => `${row}-${col}`));
 const notes = listNotes(siteId);
@@ -52,7 +58,7 @@ const question = questionFor();
 
 const MESSAGES: Record<string, string> = {
   ok: "You felt something underneath, brush away the dust to see what it is.",
-  "out-of-digs": `You've used all ${DIGS_PER_DAY} of today's digs. Come back tomorrow.`,
+  "out-of-digs": `You've used today's ${DIGS_PER_DAY} digs. Your free digs reset in ${resetIn}.`,
   "already-dug": "Someone got to that section first.",
   "out-of-range": "That isn't part of the dig site.",
   brushed: "You brushed it clean. Have a look.",
@@ -122,7 +128,9 @@ const edges = (row: number, col: number): string | undefined => {
           </form>
         </details>
       </li>
-      <li class="stat" data-digs-left={left}><strong>{left}</strong> of {allowance} digs left today</li>
+      <li class="stat" data-digs-left={left} data-reset-at={resetAt.toISOString()}>
+        <strong>{left}</strong> <span>of {allowance} digs left today{left === 0 && <span class="dig-reset">, more in <span data-reset-in>{resetIn}</span></span>}</span>
+      </li>
       <li class="stat" data-recovered={found.size}><strong>{found.size}</strong> / {ROWS * COLS} sections recovered</li>
       <li class="stat" id="tray-count"><a href="/archive">🧺 <strong>{tray.length}</strong> in your tray</a></li>
       <li class="stat" data-shards={visitor.shards}>💎 <strong>{visitor.shards}</strong> shards</li>
@@ -178,8 +186,9 @@ const edges = (row: number, col: number): string | undefined => {
 
   <p class="flash" role="status" id="flash" hidden={!flash}>{flash}</p>
   <div class="out-of-digs" id="out-of-digs" role="dialog" aria-labelledby="ood-title" aria-describedby="ood-body" hidden>
-    <p class="ood-title" id="ood-title">You've used all your digs for today</p>
+    <p class="ood-title" id="ood-title">You've used today's {DIGS_PER_DAY} digs</p>
     <p class="ood-body" id="ood-body">
+      <span class="ood-reset">Your free digs reset in <strong id="ood-reset">{resetIn}</strong>.</span>
       You have <strong id="ood-shards">0</strong> 💎. <span id="ood-detail"></span>
     </p>
     <div class="ood-actions">
@@ -501,6 +510,8 @@ const edges = (row: number, col: number): string | undefined => {
   </div>
 
   <script>
+    import { untilLabel } from "../lib/countdown";
+
     // Dragging a revealed cell into the tray only exists on this visitor's
     // own screen, so it's wired fresh after every resync below.
     function wireDragHandles(): void {
@@ -796,6 +807,24 @@ const edges = (row: number, col: number): string | undefined => {
     function digsLeft(): number {
       return Number(document.querySelector<HTMLElement>("[data-digs-left]")?.dataset.digsLeft ?? 0);
     }
+
+    // Time until free digs return. The instant comes from the server, which
+    // owns the day boundary; this only counts down to it, as the page renders
+    // it ("4h 18m"), and once it passes the next resync brings fresh digs.
+    function resetIn(): string {
+      const at = Date.parse(document.querySelector<HTMLElement>("[data-reset-at]")?.dataset.resetAt ?? "");
+      return Number.isNaN(at) ? "under a day" : untilLabel(at);
+    }
+    function tickReset(): void {
+      const el = document.querySelector<HTMLElement>("[data-reset-in]");
+      if (el) el.textContent = resetIn();
+      const sheet = document.getElementById("ood-reset");
+      if (sheet && oodEl && !oodEl.hidden) sheet.textContent = resetIn();
+      const at = Date.parse(document.querySelector<HTMLElement>("[data-reset-at]")?.dataset.resetAt ?? "");
+      // past the reset: fetch the page again so the fresh digs show up
+      if (!Number.isNaN(at) && Date.now() >= at + 2000 && digsLeft() === 0) void resync();
+    }
+    setInterval(tickReset, 30_000);
     function showOutOfDigs(near?: Element): void {
       if (!oodEl) return;
       const shards = Number(document.querySelector<HTMLElement>("[data-shards]")?.dataset.shards ?? 0);
@@ -806,10 +835,12 @@ const edges = (row: number, col: number): string | undefined => {
       const buy = document.getElementById("ood-buy");
       const buyButton = document.getElementById("ood-buy-button");
       if (shardsEl) shardsEl.textContent = String(shards);
+      const resetEl = document.getElementById("ood-reset");
+      if (resetEl) resetEl.textContent = resetIn();
       if (detail) {
         detail.textContent = affordable
           ? `A bonus dig costs ${cost} 💎.`
-          : `A bonus dig costs ${cost} 💎, so you need ${cost - shards} more. Solve a site or answer the daily trivia to earn some, or come back tomorrow.`;
+          : `A bonus dig costs ${cost} 💎, so you need ${cost - shards} more. Solve a site or answer the daily trivia to earn some.`;
       }
       if (buy) buy.hidden = !affordable;
       if (buyButton) buyButton.textContent = `Buy a dig for ${cost} 💎`;
