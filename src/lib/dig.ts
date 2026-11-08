@@ -3,7 +3,7 @@ import { and, asc, count, countDistinct, desc, eq, isNotNull, isNull } from "dri
 import { COLS, ORDER, ROWS, type Site, contentKey, siteFor } from "../sites";
 import { db } from "./db";
 import { changed } from "./events";
-import { digPurchases, digs, sites, theories, visitors } from "./schema";
+import { digPurchases, digs, sites, theories, theoryEvidence, visitors } from "./schema";
 
 export const DIGS_PER_DAY = 5;
 
@@ -88,12 +88,22 @@ export type PastSite = {
   closedAt: string;
   diggers: number;
   theories: number;
+  // everyone who dug or brushed a section of it, not only whoever named it
+  contributors: number;
+  // who uncovered or brushed the finds the solving theory cited
+  cluesFrom: string[];
 };
 
 // Every closed site, newest first, with how many distinct visitors dug it
 // and how many theories were posted about it. Unlike closedSites() above
 // (a short teaser for the dig page), this is the full record for the
 // history page, so it takes no default limit.
+//
+// A solve is a group effort: someone uncovered the clues, someone brushed
+// them, and someone put a name to them. So each site also credits how many
+// people dug or brushed it, and the people behind the clues the solving
+// theory cited. All of it comes from rows already kept (digs, the theory's
+// evidence); nothing new is stored.
 export function digHistory(limit?: number): PastSite[] {
   const diggerCounts = db
     .select({ siteId: digs.siteId, n: countDistinct(digs.visitorId) })
@@ -102,11 +112,20 @@ export function digHistory(limit?: number): PastSite[] {
     .all();
   const diggersBySite = new Map(diggerCounts.map((r) => [r.siteId, r.n]));
 
+  // diggers and brushers together, each person once per site
+  const helpers = new Map<string, Set<string>>();
+  for (const r of db.select({ siteId: digs.siteId, dug: digs.visitorId, brushed: digs.brushedBy }).from(digs).all()) {
+    const set = helpers.get(r.siteId) ?? new Set<string>();
+    set.add(r.dug);
+    if (r.brushed) set.add(r.brushed);
+    helpers.set(r.siteId, set);
+  }
+
   const theoryCounts = db.select({ siteId: theories.siteId, n: count() }).from(theories).groupBy(theories.siteId).all();
   const theoriesBySite = new Map(theoryCounts.map((r) => [r.siteId, r.n]));
 
   let query = db
-    .select({ id: sites.id, openedAt: sites.openedAt, closedAt: sites.closedAt, solvedBy: visitors.name })
+    .select({ id: sites.id, openedAt: sites.openedAt, closedAt: sites.closedAt, solvedBy: visitors.name, solverId: sites.solvedBy })
     .from(sites)
     .leftJoin(visitors, eq(sites.solvedBy, visitors.id))
     .where(isNotNull(sites.closedAt))
@@ -129,9 +148,43 @@ export function digHistory(limit?: number): PastSite[] {
           closedAt: r.closedAt ?? "",
           diggers: diggersBySite.get(r.id) ?? 0,
           theories: theoriesBySite.get(r.id) ?? 0,
+          contributors: helpers.get(r.id)?.size ?? 0,
+          cluesFrom: r.solverId ? cluesBehindSolve(r.id, r.solverId) : [],
         },
       ];
     });
+}
+
+// The names behind the finds cited by the theory that solved a site: its
+// solver's last theory there, the one that closed it. The solver themself is
+// left out, being credited already. Each name once, in the order found.
+function cluesBehindSolve(siteId: string, solverId: string): string[] {
+  const winning = db
+    .select({ id: theories.id })
+    .from(theories)
+    .where(and(eq(theories.siteId, siteId), eq(theories.visitorId, solverId)))
+    .orderBy(desc(theories.id))
+    .get();
+  if (!winning) return [];
+  const cited = db.select({ row: theoryEvidence.row, col: theoryEvidence.col }).from(theoryEvidence).where(eq(theoryEvidence.theoryId, winning.id)).all();
+  if (cited.length === 0) return [];
+  const brushers = alias(visitors, "brushers");
+  const names: string[] = [];
+  for (const { row, col } of cited) {
+    const find = db
+      .select({ finderId: digs.visitorId, finder: visitors.name, brusherId: digs.brushedBy, brusher: brushers.name })
+      .from(digs)
+      .innerJoin(visitors, eq(digs.visitorId, visitors.id))
+      .leftJoin(brushers, eq(digs.brushedBy, brushers.id))
+      .where(and(eq(digs.siteId, siteId), eq(digs.row, row), eq(digs.col, col)))
+      .orderBy(asc(digs.id))
+      .get();
+    if (!find) continue;
+    for (const [id, name] of [[find.finderId, find.finder], [find.brusherId, find.brusher]] as const) {
+      if (id && name && id !== solverId && !names.includes(name)) names.push(name);
+    }
+  }
+  return names;
 }
 
 export function digsToday(visitorId: string): number {

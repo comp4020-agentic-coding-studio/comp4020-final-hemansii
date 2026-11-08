@@ -68,3 +68,26 @@ it("a wrong guess changes nothing; naming the site with evidence buries the next
   // and the new site starts untouched
   expect(stranger.querySelectorAll('[data-state="buried"]').length).toBe(60);
 });
+
+// The history credits more than whoever typed the answer: here one player
+// digs and brushes a clue, and another saves it and names the site with it.
+it("the history credits whoever uncovered the clues a solve was built on", async () => {
+  const digger = new TestVisitor(baseUrl);
+  await digger.rename("Clue Finder");
+  const solver = new TestVisitor(baseUrl);
+  const before = openSiteOn((await solver.page()).doc);
+  const site = siteFor(before)!;
+
+  const [cell] = buriedCells((await digger.page()).doc);
+  expect(cell, NOTHING_LEFT).toBeDefined();
+  expect(await digger.dig(cell)).toBe("ok");
+  expect(await digger.brush(cell)).toBe("brushed");
+  expect(await solver.collect(cell)).toBe("archived");
+  expect(await solver.theory(`It's ${site.title}`, [cell])).toBe("solved");
+
+  const history = (await new TestVisitor(baseUrl).page("/history")).doc;
+  const entry = history.querySelector(".history-item");
+  expect(entry?.querySelector("h2")?.textContent).toContain(site.title);
+  expect(entry?.querySelector("[data-clues-from]")?.textContent).toContain("Clue Finder");
+  expect(Number(entry?.querySelector("[data-contributors]")?.textContent)).toBeGreaterThanOrEqual(1);
+});

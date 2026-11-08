@@ -5135,3 +5135,17 @@ a.specimen-tag:hover {
   display: block;
   margin-bottom: 0.35rem;
 }
+
+/* ---------- Credit on the history page ---------- */
+
+.history-credit {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.history-credit strong {
+  color: var(--ink);
+  font-weight: 600;
+}

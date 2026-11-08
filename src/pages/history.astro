@@ -6,6 +6,12 @@ const past = digHistory();
 
 const when = (iso: string): string =>
   new Date(iso).toLocaleString("en-AU", { timeZone: "Australia/Sydney", dateStyle: "medium", timeStyle: "short" });
+
+// "A", "A and B", "A, B and C"; a long list is cut to three and a count
+const nameList = (names: string[]): string => {
+  const shown = names.length > 3 ? [...names.slice(0, 3), `${names.length - 3} more`] : names;
+  return shown.length <= 1 ? (shown[0] ?? "") : `${shown.slice(0, -1).join(", ")} and ${shown.at(-1)}`;
+};
 ---
 
 <Layout title="History, The Dig">
@@ -14,7 +20,7 @@ const when = (iso: string): string =>
     <div>
       <p class="evidence-kicker">Expedition record</p>
       <h1>Sites dug up so far</h1>
-      <p>Every buried site the expedition has already closed, newest first, with who named it and how much digging it took.</p>
+      <p>Every buried site the expedition has already closed, newest first, with who named it and who dug up the clues.</p>
     </div>
     <a href="/" class="evidence-back">← Back to the dig</a>
   </header>
@@ -35,11 +41,16 @@ const when = (iso: string): string =>
                 {p.solvedBy ? <>Named by <strong>{p.solvedBy}</strong></> : "Brushed clean, nobody named it"}
                 {" "}· closed {when(p.closedAt)}
               </p>
+              {p.cluesFrom.length > 0 && (
+                <p class="history-credit" data-clues-from>
+                  With clues uncovered by <strong>{nameList(p.cluesFrom)}</strong>
+                </p>
+              )}
             </div>
             <dl class="history-stats">
-              <div>
-                <dt>Diggers</dt>
-                <dd>{p.diggers}</dd>
+              <div title="Everyone who dug or brushed a section of this site">
+                <dt>Dug or brushed</dt>
+                <dd data-contributors>{p.contributors}</dd>
               </div>
               <div>
                 <dt>Theories</dt>
